@@ -127,24 +127,33 @@ def create_settings_ui():
     title_size = 32  # 제목 크기
     subtitle_size = 24  # 부제목 크기
 
-    # CSS 스타일 업데이트
-    st.markdown(f"""
+    # CSS를 사용하여 Pretendard-Bold 폰트 적용
+    st.markdown("""
         <style>
-            /* 모든 UI 요소의 기본 폰트 크기 통일 */
+            @font-face {
+                font-family: 'Pretendard';
+                src: url('word_memory/fonts/Pretendard-Bold.otf') format('opentype');
+                font-weight: bold;
+            }
+            
+            /* 모든 UI 요소의 기본 폰트를 Pretendard로 변경 */
             .stMarkdown, .stText, div, label, input, button, select, .stSelectbox, 
-            div[data-baseweb="select"] span, .stNumberInput input {{
-                font-size: {size}px !important;
-            }}
+            div[data-baseweb="select"] span, .stNumberInput input {
+                font-family: 'Pretendard', sans-serif !important;
+                font-size: ${size}px !important;
+            }
             
             /* 제목 크기 조정 */
-            .stTitle h1 {{
-                font-size: {title_size}px !important;
-            }}
+            .stTitle h1 {
+                font-family: 'Pretendard', sans-serif !important;
+                font-size: ${title_size}px !important;
+            }
             
             /* 부제목 크기 조정 */
-            .stSubheader h2 {{
-                font-size: {subtitle_size}px !important;
-            }}
+            .stSubheader h2 {
+                font-family: 'Pretendard', sans-serif !important;
+                font-size: ${subtitle_size}px !important;
+            }
             
             /* 모든 입력 필드와 레이블 크기 증가 */
             .stNumberInput label, 
@@ -152,21 +161,24 @@ def create_settings_ui():
             .stCheckbox label,
             .stNumberInput input,
             .stSelectbox > div,
-            .stCheckbox span p {{
-                font-size: {size}px !important;
+            .stCheckbox span p {
+                font-family: 'Pretendard', sans-serif !important;
+                font-size: ${size}px !important;
                 line-height: 1.5 !important;
-            }}
+            }
             
             /* 콤보박스 드롭다운 메뉴 */
-            [data-baseweb="popover"] * {{
-                font-size: {size}px !important;
-            }}
+            [data-baseweb="popover"] * {
+                font-family: 'Pretendard', sans-serif !important;
+                font-size: ${size}px !important;
+            }
             
             /* 버튼 텍스트 */
-            .stButton > button {{
-                font-size: {size}px !important;
+            .stButton > button {
+                font-family: 'Pretendard', sans-serif !important;
+                font-size: ${size}px !important;
                 padding: 0.5rem 1rem !important;
-            }}
+            }
             
             /* 일반 텍스트 */
             .stMarkdown p,
@@ -456,12 +468,12 @@ def create_settings_ui():
     col1, col2, col3 = st.columns(3)
     with col1:
         kor_font = st.selectbox("한국어 폰트",
-                              options=['맑은 고딕', '나눔고딕', '굴림'],
-                              index=['맑은 고딕', '나눔고딕', '굴림'].index(st.session_state.settings.get('korean_font', '맑은 고딕')),
+                              options=['Pretendard', '맑은 고딕', '나눔고딕', '굴림'],
+                              index=['Pretendard', '맑은 고딕', '나눔고딕', '굴림'].index(st.session_state.settings.get('korean_font', 'Pretendard')),
                               key="kor_font")
     with col2:
         kor_color = st.color_picker("한국어 색상",
-                                  value=st.session_state.settings.get('korean_color', '#0000FF'),
+                                  value=st.session_state.settings.get('korean_color', '#FFFFFF'),
                                   key="kor_color")
     with col3:
         kor_size = st.number_input("한국어 폰트 크기",
