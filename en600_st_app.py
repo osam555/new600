@@ -127,101 +127,116 @@ def create_settings_ui():
     title_size = 32  # 제목 크기
     subtitle_size = 24  # 부제목 크기
 
-    # CSS를 사용하여 Pretendard-Bold 폰트 적용
+    # CSS를 사용하여 Pretendard-Bold 폰트와 기본 색상 적용
     st.markdown("""
         <style>
             @font-face {
                 font-family: 'Pretendard';
-                src: url('word_memory/fonts/Pretendard-Bold.otf') format('opentype');
+                src: url('base/Pretendard-Bold.otf') format('opentype');
                 font-weight: bold;
             }
             
-            /* 모든 UI 요소의 기본 폰트를 Pretendard로 변경 */
+            /* 영어 텍스트 스타일 */
+            .english-text {
+                font-family: 'Times New Roman', serif !important;
+                color: #FFFF00 !important;
+            }
+            
+            /* 한글 텍스트 스타일 */
+            .korean-text {
+                font-family: 'Pretendard', sans-serif !important;
+                color: #FFFFFF !important;
+            }
+            
+            /* 중국어 텍스트 스타일 */
+            .chinese-text {
+                font-family: 'SimSun', serif !important;
+                color: #00FF00 !important;
+            }
+            
+            /* 나머지 UI 요소 스타일 */
             .stMarkdown, .stText, div, label, input, button, select, .stSelectbox, 
             div[data-baseweb="select"] span, .stNumberInput input {
                 font-family: 'Pretendard', sans-serif !important;
-                font-size: ${size}px !important;
+                font-size: 28px !important;  /* 36px에서 28px로 축소 */
             }
             
-            /* 제목 크기 조정 */
+            /* 제목 스타일 */
             .stTitle h1 {
                 font-family: 'Pretendard', sans-serif !important;
-                font-size: ${title_size}px !important;
+                font-size: 20px !important;  /* 24px에서 20px로 축소 */
             }
             
-            /* 부제목 크기 조정 */
+            /* 부제목 스타일 */
             .stSubheader h2 {
                 font-family: 'Pretendard', sans-serif !important;
-                font-size: ${subtitle_size}px !important;
+                font-size: 18px !important;  /* 20px에서 18px로 축소 */
             }
             
-            /* 모든 입력 필드와 레이블 크기 증가 */
+            /* 숫자 입력 필드와 레이블 */
             .stNumberInput label, 
             .stSelectbox label, 
             .stCheckbox label,
             .stNumberInput input,
             .stSelectbox > div,
             .stCheckbox span p {
-                font-family: 'Pretendard', sans-serif !important;
-                font-size: ${size}px !important;
+                font-size: 24px !important;  /* 36px에서 24px로 축소 */
                 line-height: 1.5 !important;
             }
             
             /* 콤보박스 드롭다운 메뉴 */
             [data-baseweb="popover"] * {
-                font-family: 'Pretendard', sans-serif !important;
-                font-size: ${size}px !important;
+                font-size: 24px !important;  /* 36px에서 24px로 축소 */
             }
             
             /* 버튼 텍스트 */
             .stButton > button {
-                font-family: 'Pretendard', sans-serif !important;
-                font-size: ${size}px !important;
-                padding: 0.5rem 1rem !important;
+                font-size: 24px !important;  /* 36px에서 24px로 축소 */
+                padding: 0.3rem 0.8rem !important;  /* 패딩도 약간 축소 */
             }
             
-            /* 일반 텍스트 */
-            .stMarkdown p,
-            .stText p,
-            div[data-testid="stText"] p {{
-                font-size: {size}px !important;
-            }}
+            /* 진행 상태 텍스트 */
+            .status-text {
+                font-size: 22px !important;  /* 진행 상태 텍스트 크기 조정 */
+            }
             
-            /* 상태 메시지 */
-            .stAlert p {{
-                font-size: {size}px !important;
-            }}
+            /* 콤보박스 컨테이너 스타일 수정 */
+            div[data-baseweb="select"] {
+                min-height: 45px !important;  /* 높이 증가 */
+            }
             
-            /* 체크박스 텍스트 */
-            .stCheckbox label span {{
-                font-size: {size}px !important;
-            }}
-            
-            /* 숫자 입력 필드 너비 조정 */
-            .stNumberInput {{
-                min-width: 150px !important;
-            }}
-            
-            /* 콤보박스 스타일 수정 */
-            div[data-baseweb="select"] {{
-                min-height: 40px !important;
-                line-height: 40px !important;
-            }}
-            
-            /* 콤보박스 내부 텍스트 정렬 */
-            div[data-baseweb="select"] > div {{
-                min-height: 40px !important;
-                padding: 5px 0 !important;
+            /* 콤보박스 내부 텍스트 컨테이너 */
+            div[data-baseweb="select"] > div {
+                min-height: 45px !important;  /* 높이 증가 */
+                padding: 8px 12px !important;  /* 상하 패딩 증가 */
                 display: flex !important;
                 align-items: center !important;
-            }}
+            }
             
-            /* 드롭다운 메뉴 아이템 높이 */
-            div[role="listbox"] [role="option"] {{
-                min-height: 40px !important;
-                line-height: 40px !important;
-                padding: 5px 12px !important;
-            }}
+            /* 드롭다운 메뉴 아이템 */
+            div[role="listbox"] [role="option"] {
+                min-height: 45px !important;  /* 높이 증가 */
+                padding: 8px 12px !important;  /* 상하 패딩 증가 */
+                display: flex !important;
+                align-items: center !important;
+            }
+            
+            /* 콤보박스 선택된 값 */
+            div[data-baseweb="select"] span {
+                line-height: 28px !important;  /* 줄 높이 조정 */
+                vertical-align: middle !important;
+            }
+            
+            /* 콤보박스 레이블 */
+            div.stSelectbox label {
+                margin-bottom: 5px !important;  /* 레이블과 콤보박스 사이 간격 */
+                line-height: 1.5 !important;
+            }
+            
+            /* 콤보박스 전체 컨테이너 */
+            div.stSelectbox {
+                margin-bottom: 10px !important;  /* 콤보박스 간 간격 */
+            }
         </style>
     """, unsafe_allow_html=True)
 
@@ -397,28 +412,28 @@ def create_settings_ui():
     # 4개의 입력창을 한 줄로 배치 (순서 변경)
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        spacing = st.number_input("문장 간격(초)",
+        spacing = st.number_input("문장 간격",
                                 value=st.session_state.settings['spacing'],
                                 min_value=0.1,
                                 step=0.1,
                                 format="%.1f",
                                 key="spacing")
     with col2:
-        subtitle_delay = st.number_input("자막 딜레이(초)",
+        subtitle_delay = st.number_input("자막 딜레이",
                                        value=st.session_state.settings['subtitle_delay'],
                                        min_value=0.1,
                                        step=0.1,
                                        format="%.1f",
                                        key="subtitle_delay")
     with col3:
-        next_sentence_time = st.number_input("다음 문장(초)",
+        next_sentence_time = st.number_input("다음 문장",
                                            value=st.session_state.settings['next_sentence_time'],
                                            min_value=0.1,
                                            step=0.1,
                                            format="%.1f",
                                            key="next_sentence_time")
     with col4:
-        break_interval = st.number_input("브레이크(문장)",
+        break_interval = st.number_input("브레이크",
                                        value=st.session_state.settings['break_interval'],
                                        min_value=1,
                                        step=1,
@@ -457,7 +472,7 @@ def create_settings_ui():
                                   value=st.session_state.settings.get('english_color', '#000000'),
                                   key="eng_color")
     with col3:
-        eng_size = st.number_input("영어 폰트 크기",
+        eng_size = st.number_input("영어 폰트",
                                  min_value=12,
                                  max_value=72,
                                  value=st.session_state.settings.get('english_font_size', 32),
@@ -467,16 +482,16 @@ def create_settings_ui():
     # 한국어 폰트/색상/크기 설정
     col1, col2, col3 = st.columns(3)
     with col1:
-        kor_font = st.selectbox("한국어 폰트",
+        kor_font = st.selectbox("한글 폰트",
                               options=['Pretendard', '맑은 고딕', '나눔고딕', '굴림'],
                               index=['Pretendard', '맑은 고딕', '나눔고딕', '굴림'].index(st.session_state.settings.get('korean_font', 'Pretendard')),
                               key="kor_font")
     with col2:
-        kor_color = st.color_picker("한국어 색상",
+        kor_color = st.color_picker("한글 색상",
                                   value=st.session_state.settings.get('korean_color', '#FFFFFF'),
                                   key="kor_color")
     with col3:
-        kor_size = st.number_input("한국어 폰트 크기",
+        kor_size = st.number_input("한글 폰트",
                                  min_value=12,
                                  max_value=72,
                                  value=st.session_state.settings.get('korean_font_size', 32),
@@ -486,16 +501,16 @@ def create_settings_ui():
     # 중국어 폰트/색상/크기 설정
     col1, col2, col3 = st.columns(3)
     with col1:
-        zh_font = st.selectbox("중국어 폰트",
+        zh_font = st.selectbox("중문 폰트",
                              options=['SimSun', 'Microsoft YaHei', 'SimHei'],
                              index=['SimSun', 'Microsoft YaHei', 'SimHei'].index(st.session_state.settings.get('chinese_font', 'SimSun')),
                              key="zh_font")
     with col2:
-        zh_color = st.color_picker("중국어 색상",
+        zh_color = st.color_picker("중문 색상",
                                  value=st.session_state.settings.get('chinese_color', '#FF0000'),
                                  key="zh_color")
     with col3:
-        zh_size = st.number_input("중국어 폰트 크기",
+        zh_size = st.number_input("중문 폰트",
                                 min_value=12,
                                 max_value=72,
                                 value=st.session_state.settings.get('chinese_font_size', 32),
@@ -712,32 +727,17 @@ async def start_learning():
     with col3:
         auto_repeat = st.checkbox("자동 반복", value=True, key="auto_repeat")
     with col4:
-        # 실시간 자막 토글 버튼
         hide_all = st.checkbox("전체 자막 숨기기", value=False, key="hide_all")
-    
-    # 언어별 음성 설정
-    voice_settings = {
-        'english': {'voice': VOICE_MAPPING['english'][settings['eng_voice']], 'speed': settings['english_speed']},
-        'korean': {'voice': VOICE_MAPPING['korean'][settings['kor_voice']], 'speed': settings['korean_speed']},
-        'chinese': {'voice': VOICE_MAPPING['chinese'][settings['zh_voice']], 'speed': settings['chinese_speed']}
-    }
     
     # 학습 진행
     total_sentences = len(english)
-    sentence_count = 0  # 문장 카운터 초기화
+    sentence_count = 0
     
-    while True:  # 자동 반복을 위한 무한 루프
+    while True:
         for i, (eng, kor, chn) in enumerate(zip(english, korean, chinese)):
-            # 브레이크 체크 및 실행
-            if settings['break_enabled'] and sentence_count > 0 and sentence_count % settings['break_interval'] == 0:
-                status.warning(f"🔄 {settings['break_interval']}문장 완료! {settings['break_duration']}초간 휴식...")
-                play_break_sound()  # 브레이크 알림음 재생
-                time.sleep(settings['break_duration'])  # 설정된 시간만큼 휴식
-                status.empty()
-            
-            # 진행률 업데이트
             progress.progress((i + 1) / total_sentences)
-            # 진행 상태와 배속 정보를 함께 표시
+            
+            # 진행 상태와 배속 정보 표시
             speed_info = []
             ko_speed = st.session_state.settings['korean_speed']
             eng_speed = st.session_state.settings['english_speed']
@@ -748,52 +748,64 @@ async def start_learning():
             speed_info = f"한글 {ko_speed_text}배 | 영어 {eng_speed_text}배"
             status.text(f"학습 진행중... {i+1}/{total_sentences} {speed_info}")
             
-            # 자막과 음성 처리
-            texts = {'english': eng, 'korean': kor, 'chinese': chn}
-            langs = [settings['first_lang'], settings['second_lang'], settings['third_lang']]
-            repeats = [settings['first_repeat'], settings['second_repeat'], settings['third_repeat']]
-            
-            # 각 언어별 처리
-            for j, (lang, repeat) in enumerate(zip(langs, repeats)):
-                if lang != 'none':  # 언어가 선택된 경우
-                    # 자막 표시 여부 결정
-                    hide = settings['hide_subtitles'][f'{["first", "second", "third"][j]}_lang'] or hide_all
-                    
-                    # 자막 표시
-                    if not hide:
-                        subtitles[j].markdown(
-                            f'<div class="{lang}-text" style="color: {settings[f"{lang}_color"]} !important;">{texts[lang]}</div>', 
-                            unsafe_allow_html=True
-                        )
-                    elif not settings['keep_subtitles']:  # 자막 유지가 꺼져있을 때만 자막 지우기
-                        subtitles[j].empty()
-                    
-                    # 음성 재생 (반복 횟수만큼)
-                    if repeat > 0:
-                        for _ in range(repeat):
-                            audio_file = await create_audio(
-                                texts[lang], 
-                                voice_settings[lang]['voice'],
-                                voice_settings[lang]['speed']
-                            )
-                            if audio_file:
-                                play_audio(audio_file)
-                                time.sleep(0.1)
-                
-                if not settings['keep_subtitles']:  # 자막 유지가 꺼져있을 때만 딜레이 적용
-                    time.sleep(settings['subtitle_delay'])
-            
-            # 문장 카운터 증가
+            # 자막 표시
+            if not hide_all:
+                # 영어 자막
+                subtitles[0].markdown(
+                    f'<p style="font-family: Times New Roman; color: #FFFF00; font-size: {settings["english_font_size"]}px;">{eng}</p>',
+                    unsafe_allow_html=True
+                )
+                # 한글 자막
+                subtitles[1].markdown(
+                    f'<p style="font-family: Pretendard; color: #FFFFFF; font-size: {settings["korean_font_size"]}px;">{kor}</p>',
+                    unsafe_allow_html=True
+                )
+                # 중국어 자막
+                subtitles[2].markdown(
+                    f'<p style="font-family: SimSun; color: #00FF00; font-size: {settings["chinese_font_size"]}px;">{chn}</p>',
+                    unsafe_allow_html=True
+                )
+
+            # 음성 재생
+            try:
+                # 한국어 음성
+                if settings.get('play_korean', False):
+                    audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
+                    if audio_file:
+                        play_audio(audio_file)
+                        time.sleep(settings['spacing'])
+
+                # 영어 음성
+                if settings.get('play_english', True):  # 영어는 기본적으로 활성화
+                    audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
+                    if audio_file:
+                        play_audio(audio_file)
+                        time.sleep(settings['spacing'])
+
+                # 중국어 음성
+                if settings.get('play_chinese', False):
+                    audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
+                    if audio_file:
+                        play_audio(audio_file)
+                        time.sleep(settings['spacing'])
+
+            except Exception as e:
+                st.error(f"음성 재생 중 오류 발생: {e}")
+                traceback.print_exc()
+
+            # 다음 문장으로 넘어가기 전 대기
+            time.sleep(settings['next_sentence_time'])
+
+            # 브레이크 체크
             sentence_count += 1
-            
-            # 문장 간 간격
-            if i < total_sentences - 1:
-                time.sleep(settings['spacing'])
-        
+            if settings['break_enabled'] and sentence_count % settings['break_interval'] == 0:
+                play_break_sound()
+                time.sleep(settings['break_duration'])
+
         # 자동 반복이 꺼져 있으면 루프 종료
         if not auto_repeat:
             break
-    
+
     st.success("학습이 완료되었습니다!")
     st.session_state.page = 'settings'
     st.rerun()
