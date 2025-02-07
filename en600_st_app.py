@@ -13,7 +13,6 @@ import subprocess
 import numpy as np
 import traceback
 import json
-from playsound import playsound
 import base64
 
 ## streamlit run word_memory/en600_st_app.py
@@ -21,7 +20,7 @@ import base64
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
 SETTINGS_PATH = SCRIPT_DIR / 'settings.json'
-EXCEL_PATH = SCRIPT_DIR / 'en600new.xlsx'
+EXCEL_PATH = SCRIPT_DIR / 'base/en600new.xlsx'
 
 # 음성 매핑 설정
 VOICE_MAPPING = {
@@ -601,7 +600,7 @@ def play_audio(file_path):
 def play_break_sound():
     """브레이크 알림음 재생"""
     try:
-        break_sound_path = SCRIPT_DIR / 'break.wav'
+        break_sound_path = SCRIPT_DIR / 'base/break.wav'
         if break_sound_path.exists():
             with open(break_sound_path, 'rb') as f:
                 audio_bytes = f.read()
@@ -612,7 +611,7 @@ def play_break_sound():
                 </audio>
             """, unsafe_allow_html=True)
         else:
-            st.warning("브레이크 알림음 파일이 없습니다: break.wav")
+            st.warning("브레이크 알림음 파일이 없습니다: /base/break.wav")
     except Exception as e:
         st.error(f"알림음 재생 오류: {e}")
 
