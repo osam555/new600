@@ -647,51 +647,33 @@ async def create_audio(text, voice, speed=1.0):
 
 def create_learning_ui():
     """학습 화면 UI 생성"""
-    st.markdown(f"""
-        <style>
-            /* 재생설정 콤보박스 너비 축소 */
-            div[data-testid="column"] .stNumberInput {{
-                max-width: 120px !important;
-            }}
-            
-            /* 자막 텍스트 스타일 */
-            .english-text {{
-                font-family: {st.session_state.settings['english_font']} !important;
-                color: {st.session_state.settings['english_color']} !important;
-                font-size: 32px !important;
-                font-weight: bold !important;
-            }}
-            .korean-text {{
-                font-family: {st.session_state.settings['korean_font']} !important;
-                color: {st.session_state.settings['korean_color']} !important;
-                font-size: 32px !important;
-                font-weight: bold !important;
-            }}
-            .chinese-text {{
-                font-family: {st.session_state.settings['chinese_font']} !important;
-                color: {st.session_state.settings['chinese_color']} !important;
-                font-size: 32px !important;
-                font-weight: bold !important;
-            }}
-            
-            /* 진행 상태 텍스트 스타일 */
-            .stProgress > div > div > div > div {{
-                font-size: 24px !important;
-            }}
-            
-            /* 상태 메시지 텍스트 스타일 */
-            div[data-testid="stText"] {{
-                font-size: 24px !important;
-            }}
-        </style>
-    """, unsafe_allow_html=True)
     
-    # "학습 진행" 제목 제거
+    # 상단 컬럼 생성 - 진행 상태와 배속 정보를 위한 컬럼
+    col1, col2 = st.columns([0.7, 0.3])
     
-    # 진행 상황 표시
-    progress = st.progress(0)
-    status = st.empty()
+    with col1:
+        progress = st.progress(0)
+        status = st.empty()
+    
+        # 배속 정보 표시
+        speed_info = []
+        
+        # 한글 배속 정보
+        ko_speed = st.session_state.settings['korean_speed']
+        ko_speed_text = str(int(ko_speed)) if ko_speed.is_integer() else f"{ko_speed:.1f}"
+        speed_info.append(f"한글 {ko_speed_text}배")
+        
+        # 영어 배속 정보
+        eng_speed = st.session_state.settings['english_speed']
+        eng_speed_text = str(int(eng_speed)) if eng_speed.is_integer() else f"{eng_speed:.1f}"
+        speed_info.append(f"영어 {eng_speed_text}배")
+        
+        # 배속 정보를 하나의 문자열로 결합
+        speed_display = " | ".join(speed_info)
+    
+    # 자막을 위한 빈 컨테이너
     subtitles = [st.empty() for _ in range(3)]
+    
     return progress, status, subtitles
 
 async def start_learning():
@@ -755,7 +737,16 @@ async def start_learning():
             
             # 진행률 업데이트
             progress.progress((i + 1) / total_sentences)
-            status.text(f"학습 진행중... {i+1}/{total_sentences}")
+            # 진행 상태와 배속 정보를 함께 표시
+            speed_info = []
+            ko_speed = st.session_state.settings['korean_speed']
+            eng_speed = st.session_state.settings['english_speed']
+            
+            ko_speed_text = str(int(ko_speed)) if ko_speed.is_integer() else f"{ko_speed:.1f}"
+            eng_speed_text = str(int(eng_speed)) if eng_speed.is_integer() else f"{eng_speed:.1f}"
+            
+            speed_info = f"한글 {ko_speed_text}배 | 영어 {eng_speed_text}배"
+            status.text(f"학습 진행중... {i+1}/{total_sentences} {speed_info}")
             
             # 자막과 음성 처리
             texts = {'english': eng, 'korean': kor, 'chinese': chn}
