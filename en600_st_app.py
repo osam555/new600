@@ -745,8 +745,11 @@ async def start_learning():
             ko_speed_text = str(int(ko_speed)) if ko_speed.is_integer() else f"{ko_speed:.1f}"
             eng_speed_text = str(int(eng_speed)) if eng_speed.is_integer() else f"{eng_speed:.1f}"
             
-            speed_info = f"한글 {ko_speed_text}배 | 영어 {eng_speed_text}배"
-            status.text(f"학습 진행중... {i+1}/{total_sentences} {speed_info}")
+            # 배속 정보를 초록색으로 표시
+            status.markdown(
+                f'학습 진행중... {i+1}/{total_sentences} <span style="color: #00FF00">한글 {ko_speed_text}배 | 영어 {eng_speed_text}배</span>',
+                unsafe_allow_html=True
+            )
             
             # 자막 표시
             if not hide_all:
