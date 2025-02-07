@@ -771,39 +771,89 @@ async def start_learning():
 
             # 음성 재생
             try:
-                # 한국어 음성
-                if settings.get('play_korean', False):
-                    audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
-                    if audio_file:
+                # 첫 번째 언어
+                first_lang = settings['first_lang']
+                if first_lang == 'korean':
+                    for _ in range(settings['first_repeat']):
+                        audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
                         play_audio(audio_file)
-                        time.sleep(settings['spacing'])
+                        await asyncio.sleep(settings['spacing'])
+                elif first_lang == 'english':
+                    for _ in range(settings['first_repeat']):
+                        audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
+                        play_audio(audio_file)
+                        await asyncio.sleep(settings['spacing'])
+                elif first_lang == 'chinese':
+                    for _ in range(settings['first_repeat']):
+                        audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
+                        play_audio(audio_file)
+                        await asyncio.sleep(settings['spacing'])
 
-                # 영어 음성
-                if settings.get('play_english', True):  # 영어는 기본적으로 활성화
-                    audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
-                    if audio_file:
+                # 두 번째 언어
+                second_lang = settings['second_lang']
+                if second_lang == 'korean':
+                    for _ in range(settings['second_repeat']):
+                        audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
                         play_audio(audio_file)
-                        time.sleep(settings['spacing'])
+                        await asyncio.sleep(settings['spacing'])
+                elif second_lang == 'english':
+                    for _ in range(settings['second_repeat']):
+                        audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
+                        play_audio(audio_file)
+                        await asyncio.sleep(settings['spacing'])
+                elif second_lang == 'chinese':
+                    for _ in range(settings['second_repeat']):
+                        audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
+                        play_audio(audio_file)
+                        await asyncio.sleep(settings['spacing'])
 
-                # 중국어 음성
-                if settings.get('play_chinese', False):
-                    audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
-                    if audio_file:
+                # 세 번째 언어
+                third_lang = settings['third_lang']
+                if third_lang == 'korean':
+                    for _ in range(settings['third_repeat']):
+                        audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
                         play_audio(audio_file)
-                        time.sleep(settings['spacing'])
+                        await asyncio.sleep(settings['spacing'])
+                elif third_lang == 'english':
+                    for _ in range(settings['third_repeat']):
+                        audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
+                        play_audio(audio_file)
+                        await asyncio.sleep(settings['spacing'])
+                elif third_lang == 'chinese':
+                    for _ in range(settings['third_repeat']):
+                        audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
+                        play_audio(audio_file)
+                        await asyncio.sleep(settings['spacing'])
 
             except Exception as e:
                 st.error(f"음성 재생 중 오류 발생: {e}")
                 traceback.print_exc()
 
             # 다음 문장으로 넘어가기 전 대기
-            time.sleep(settings['next_sentence_time'])
+            await asyncio.sleep(settings['next_sentence_time'])
 
             # 브레이크 체크
             sentence_count += 1
             if settings['break_enabled'] and sentence_count % settings['break_interval'] == 0:
-                play_break_sound()
-                time.sleep(settings['break_duration'])
+                try:
+                    # 1. 북소리 재생
+                    break_sound_path = SCRIPT_DIR / 'base/break.wav'
+                    if break_sound_path.exists():
+                        play_audio(str(break_sound_path))
+                        await asyncio.sleep(0.5)  # 북소리와 음성 안내 사이 간격
+                    
+                    # 2. Break Time 음성 안내 생성 및 재생
+                    break_msg = "5 second Break Time"
+                    break_voice = VOICE_MAPPING['english']['Jenny']  # Jenny 목소리 사용
+                    break_audio = await create_audio(break_msg, break_voice, 1.0)  # 기본 속도로 재생
+                    if break_audio:
+                        play_audio(break_audio)
+                    
+                    # 3. 브레이크 시간 대기
+                    await asyncio.sleep(settings['break_duration'])
+                except Exception as e:
+                    st.error(f"브레이크 알림음 재생 오류: {e}")
+                    traceback.print_exc()
 
         # 자동 반복이 꺼져 있으면 루프 종료
         if not auto_repeat:
