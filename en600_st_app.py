@@ -747,7 +747,7 @@ async def start_learning():
             
             # 배속 정보를 초록색으로 표시
             status.markdown(
-                f'학습 진행중... {i+1}/{total_sentences} <span style="color: #00FF00">한글 {ko_speed_text}배 | 영어 {eng_speed_text}배</span>',
+                f'학습 진행중... {i+1}/{total_sentences} <span style="color: #00FF00"> 한글 {ko_speed_text}배 | 영어 {eng_speed_text}배</span>',
                 unsafe_allow_html=True
             )
             
