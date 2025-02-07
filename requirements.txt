@@ -1,0 +1,7 @@
+streamlit
+pandas
+edge-tts
+pygame
+pillow
+openpyxl
+soundfile
