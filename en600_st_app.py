@@ -658,10 +658,15 @@ async def start_learning():
                 # 순위에 따라 자막 표시
                 langs = [settings['first_lang'], settings['second_lang'], settings['third_lang']]
                 for idx, lang in enumerate(langs):
-                    subtitles[idx].markdown(
-                        f'<p style="font-family: {fonts[lang]}; color: {colors[lang]}; font-size: {settings[f"{lang}_font_size"]}px;">{texts[lang]}</p>',
-                        unsafe_allow_html=True
-                    )
+                    # 해당 순위의 자막이 숨김 상태가 아닐 때만 표시
+                    if not settings['hide_subtitles'][f"{['first', 'second', 'third'][idx]}_lang"]:
+                        subtitles[idx].markdown(
+                            f'<p style="font-family: {fonts[lang]}; color: {colors[lang]}; font-size: {settings[f"{lang}_font_size"]}px;">{texts[lang]}</p>',
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        # 자막이 숨김 상태일 때는 빈 공간 표시
+                        subtitles[idx].markdown("<p>&nbsp;</p>", unsafe_allow_html=True)
 
             # 음성 재생
             try:
