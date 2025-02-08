@@ -21,6 +21,7 @@ import base64
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
 SETTINGS_PATH = SCRIPT_DIR / 'settings.json'
 EXCEL_PATH = SCRIPT_DIR / 'base/en600new.xlsx'
+TEMP_DIR = SCRIPT_DIR / 'temp'  # 임시 파일 저장 경로 추가
 
 # 음성 매핑 설정
 VOICE_MAPPING = {
@@ -41,7 +42,9 @@ VOICE_MAPPING = {
     },
     'chinese': {
         "샤오샤오": "zh-CN-XiaoxiaoNeural",
-        "윈시": "zh-CN-YunxiNeural"
+        "윈시": "zh-CN-YunxiNeural",
+        "윈지엔": "zh-CN-YunjianNeural",
+        "윈양": "zh-CN-YunyangNeural"
     }
 }
 
@@ -51,6 +54,10 @@ LANG_DISPLAY = {'english': 'EN', 'korean': 'KO', 'chinese': 'CH', 'none': '없�
 
 def initialize_session_state():
     """세션 상태 초기화"""
+    # temp 폴더가 없으면 생성
+    if not TEMP_DIR.exists():
+        TEMP_DIR.mkdir(parents=True)
+    
     if 'settings' not in st.session_state:
         # 저장된 설정 파일이 있으면 로드
         try:
@@ -72,7 +79,7 @@ def initialize_session_state():
             'third_repeat': 0,
             'kor_voice': '선희',
             'eng_voice': 'Steffan',
-            'zh_voice': '샤오샤오',
+            'zh_voice': 'yunjian',
             'start_row': 1,
             'end_row': 10,
             'word_delay': 0.1,
@@ -86,7 +93,7 @@ def initialize_session_state():
             'break_interval': 20,
             'break_duration': 5,
             'next_sentence_time': 0.5,
-            'english_font': 'Arial',
+            'english_font': 'Pretendard',
             'korean_font': 'Pretendard',
             'chinese_font': 'SimSun',
             'english_color': '#FFFF00',
@@ -179,33 +186,11 @@ def create_settings_ui():
             index=['korean', 'english', 'chinese'].index(settings['first_lang']),
             format_func=lambda x: LANG_DISPLAY[x],
             key="settings_first_lang")
-    with col2:
-        settings['second_lang'] = st.selectbox("2순위 언어",
-            options=['korean', 'english', 'chinese'],
-            index=['korean', 'english', 'chinese'].index(settings['second_lang']),
-            format_func=lambda x: LANG_DISPLAY[x],
-            key="settings_second_lang")
-    with col3:
-        settings['third_lang'] = st.selectbox("3순위 언어",
-            options=['korean', 'english', 'chinese'],
-            index=['korean', 'english', 'chinese'].index(settings['third_lang']),
-            format_func=lambda x: LANG_DISPLAY[x],
-            key="settings_third_lang")
-
-    # 1순위 설정
-    col1, col2, col3 = st.columns(3)  # 동일한 너비로 설정
-    with col1:
-        first_lang = st.selectbox("1순위",
-                                options=[LANG_DISPLAY[l] for l in LANGUAGES],
-                                index=LANGUAGES.index(settings['first_lang']),
-                                key="first_lang")
-    with col2:
         first_repeat = st.number_input("반복",
                                      value=settings['first_repeat'],
                                      min_value=0,
                                      key="first_repeat",
                                      format="%d")
-    with col3:
         speed_key = f"{settings['first_lang']}_speed"
         first_speed = st.number_input("배속",
                                     value=settings[speed_key],
@@ -215,22 +200,19 @@ def create_settings_ui():
                                     key="first_speed")
         settings[speed_key] = first_speed
 
-    # 2순위 설정
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        second_lang = st.selectbox("2순위",
-                                 options=[LANG_DISPLAY[l] for l in LANGUAGES],
-                                 index=LANGUAGES.index(settings['second_lang']),
-                                 key="second_lang")
     with col2:
-        second_repeat = st.number_input("반복 ",
+        settings['second_lang'] = st.selectbox("2순위 언어",
+            options=['korean', 'english', 'chinese'],
+            index=['korean', 'english', 'chinese'].index(settings['second_lang']),
+            format_func=lambda x: LANG_DISPLAY[x],
+            key="settings_second_lang")
+        second_repeat = st.number_input("반복",
                                       value=settings['second_repeat'],
                                       min_value=0,
                                       key="second_repeat",
                                       format="%d")
-    with col3:
         speed_key = f"{settings['second_lang']}_speed"
-        second_speed = st.number_input("배속 ",
+        second_speed = st.number_input("배속",
                                      value=settings[speed_key],
                                      min_value=0.1,
                                      step=0.1,
@@ -238,22 +220,19 @@ def create_settings_ui():
                                      key="second_speed")
         settings[speed_key] = second_speed
 
-    # 3순위 설정
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        third_lang = st.selectbox("3순위",
-                                options=[LANG_DISPLAY[l] for l in LANGUAGES],
-                                index=LANGUAGES.index(settings['third_lang']),
-                                key="third_lang")
-    with col2:
-        third_repeat = st.number_input("반복  ",
+    with col3:
+        settings['third_lang'] = st.selectbox("3순위 언어",
+            options=['korean', 'english', 'chinese'],
+            index=['korean', 'english', 'chinese'].index(settings['third_lang']),
+            format_func=lambda x: LANG_DISPLAY[x],
+            key="settings_third_lang")
+        third_repeat = st.number_input("반복",
                                      value=settings['third_repeat'],
                                      min_value=0,
                                      key="third_repeat",
                                      format="%d")
-    with col3:
         speed_key = f"{settings['third_lang']}_speed"
-        third_speed = st.number_input("배속  ",
+        third_speed = st.number_input("배속",
                                     value=settings[speed_key],
                                     min_value=0.1,
                                     step=0.1,
@@ -361,8 +340,8 @@ def create_settings_ui():
     col1, col2, col3 = st.columns(3)
     with col1:
         eng_font = st.selectbox("영어 폰트",
-                              options=['Arial', 'Times New Roman', 'Verdana'],
-                              index=['Arial', 'Times New Roman', 'Verdana'].index(settings.get('english_font', 'Arial')),
+                              options=['Pretendard', 'Arial', 'Times New Roman', 'Verdana'],
+                              index=['Pretendard', 'Arial', 'Times New Roman', 'Verdana'].index(settings.get('english_font', 'Pretendard')),
                               key="eng_font")
     with col2:
         eng_color = st.color_picker("영어 색상",
@@ -452,9 +431,9 @@ def create_settings_ui():
 
     # 설정값 업데이트 - 모든 설정값을 한 번에 업데이트
     settings.update({
-        'first_lang': [k for k, v in LANG_DISPLAY.items() if v == first_lang][0],
-        'second_lang': [k for k, v in LANG_DISPLAY.items() if v == second_lang][0],
-        'third_lang': [k for k, v in LANG_DISPLAY.items() if v == third_lang][0],
+        'first_lang': settings['first_lang'],
+        'second_lang': settings['second_lang'],
+        'third_lang': settings['third_lang'],
         'first_repeat': first_repeat,
         'second_repeat': second_repeat,
         'third_repeat': third_repeat,
@@ -520,7 +499,8 @@ def play_audio(file_path):
     except Exception as e:
         st.error(f"음성 재생 중 오류: {e}")
     finally:
-        if os.path.exists(file_path):
+        # temp 폴더의 임시 파일만 삭제
+        if os.path.exists(file_path) and TEMP_DIR in Path(file_path).parents:
             os.remove(file_path)
 
 def play_break_sound():
@@ -544,7 +524,7 @@ def play_break_sound():
 async def create_audio(text, voice, speed=1.0):
     """음성 파일 생성"""
     try:
-        output_file = f"temp_{int(time.time()*1000)}.wav"
+        output_file = TEMP_DIR / f"temp_{int(time.time()*1000)}.wav"
         
         # 배속 계산 수정
         if speed > 1:
@@ -553,8 +533,8 @@ async def create_audio(text, voice, speed=1.0):
             rate_str = f"-{int((1 - speed) * 100)}%"
             
         communicate = edge_tts.Communicate(text, voice, rate=rate_str)
-        await communicate.save(output_file)
-        return output_file
+        await communicate.save(str(output_file))
+        return str(output_file)
     except Exception as e:
         st.error(f"음성 생성 오류: {e}")
         return None
@@ -644,15 +624,28 @@ async def start_learning():
             progress.progress((i + 1) / total_sentences)
             
             # 진행 상태와 배속 정보 표시
-            ko_speed = settings['korean_speed']
-            eng_speed = settings['english_speed']
-            zh_speed = settings['chinese_speed']
-            ko_speed_text = str(int(ko_speed)) if ko_speed.is_integer() else f"{ko_speed:.1f}"
-            eng_speed_text = str(int(eng_speed)) if eng_speed.is_integer() else f"{eng_speed:.1f}"
-            zh_speed_text = str(int(zh_speed)) if zh_speed.is_integer() else f"{zh_speed:.1f}"
+            speed_info = []
+            
+            # 순위에 따라 실제 재생되는 음성의 배속만 표시
+            for lang in [settings['first_lang'], settings['second_lang'], settings['third_lang']]:
+                if lang == 'korean' and settings['first_repeat'] > 0:
+                    ko_speed = settings['korean_speed']
+                    ko_speed_text = str(int(ko_speed)) if ko_speed.is_integer() else f"{ko_speed:.1f}"
+                    speed_info.append(f"한글 {ko_speed_text}배")
+                elif lang == 'english' and settings['second_repeat'] > 0:
+                    eng_speed = settings['english_speed']
+                    eng_speed_text = str(int(eng_speed)) if eng_speed.is_integer() else f"{eng_speed:.1f}"
+                    speed_info.append(f"영어 {eng_speed_text}배")
+                elif lang == 'chinese' and settings['third_repeat'] > 0:
+                    zh_speed = settings['chinese_speed']
+                    zh_speed_text = str(int(zh_speed)) if zh_speed.is_integer() else f"{zh_speed:.1f}"
+                    speed_info.append(f"중국어 {zh_speed_text}배")
+            
+            # 배속 정보를 하나의 문자열로 결합
+            speed_display = " | ".join(speed_info)
             
             status.markdown(
-                f'학습 진행중... {i+1}/{total_sentences} <span style="color: #00FF00"> | 한글 {ko_speed_text}배 | 영어 {eng_speed_text}배 | 중국어 {zh_speed_text}배</span>',
+                f'학습 진행중... {i+1}/{total_sentences} <span style="color: #00FF00"> | {speed_display}</span>',
                 unsafe_allow_html=True
             )
 
@@ -674,48 +667,51 @@ async def start_learning():
             try:
                 # 첫 번째 언어
                 first_lang = settings['first_lang']
-                if first_lang == 'korean':
-                    audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
-                    play_audio(audio_file)
-                    await asyncio.sleep(settings['spacing'])
-                elif first_lang == 'english':
-                    audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
-                    play_audio(audio_file)
-                    await asyncio.sleep(settings['spacing'])
-                elif first_lang == 'chinese':
-                    audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
-                    play_audio(audio_file)
-                    await asyncio.sleep(settings['spacing'])
+                if settings['first_repeat'] > 0:  # 반복 횟수가 0보다 클 때만 재생
+                    if first_lang == 'korean':
+                        audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
+                        play_audio(audio_file)
+                        await asyncio.sleep(settings['spacing'])
+                    elif first_lang == 'english':
+                        audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
+                        play_audio(audio_file)
+                        await asyncio.sleep(settings['spacing'])
+                    elif first_lang == 'chinese':
+                        audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
+                        play_audio(audio_file)
+                        await asyncio.sleep(settings['spacing'])
 
                 # 두 번째 언어
                 second_lang = settings['second_lang']
-                if second_lang == 'korean':
-                    audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
-                    play_audio(audio_file)
-                    await asyncio.sleep(settings['spacing'])
-                elif second_lang == 'english':
-                    audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
-                    play_audio(audio_file)
-                    await asyncio.sleep(settings['spacing'])
-                elif second_lang == 'chinese':
-                    audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
-                    play_audio(audio_file)
-                    await asyncio.sleep(settings['spacing'])
+                if settings['second_repeat'] > 0:  # 반복 횟수가 0보다 클 때만 재생
+                    if second_lang == 'korean':
+                        audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
+                        play_audio(audio_file)
+                        await asyncio.sleep(settings['spacing'])
+                    elif second_lang == 'english':
+                        audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
+                        play_audio(audio_file)
+                        await asyncio.sleep(settings['spacing'])
+                    elif second_lang == 'chinese':
+                        audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
+                        play_audio(audio_file)
+                        await asyncio.sleep(settings['spacing'])
 
                 # 세 번째 언어
                 third_lang = settings['third_lang']
-                if third_lang == 'korean':
-                    audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
-                    play_audio(audio_file)
-                    await asyncio.sleep(settings['spacing'])
-                elif third_lang == 'english':
-                    audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
-                    play_audio(audio_file)
-                    await asyncio.sleep(settings['spacing'])
-                elif third_lang == 'chinese':
-                    audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
-                    play_audio(audio_file)
-                    await asyncio.sleep(settings['spacing'])
+                if settings['third_repeat'] > 0:  # 반복 횟수가 0보다 클 때만 재생
+                    if third_lang == 'korean':
+                        audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
+                        play_audio(audio_file)
+                        await asyncio.sleep(settings['spacing'])
+                    elif third_lang == 'english':
+                        audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
+                        play_audio(audio_file)
+                        await asyncio.sleep(settings['spacing'])
+                    elif third_lang == 'chinese':
+                        audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
+                        play_audio(audio_file)
+                        await asyncio.sleep(settings['spacing'])
 
             except Exception as e:
                 st.error(f"음성 재생 오류: {e}")
@@ -734,15 +730,21 @@ async def start_learning():
                     break_sound_path = SCRIPT_DIR / 'base/break.wav'
                     if break_sound_path.exists():
                         play_audio(str(break_sound_path))
-                        await asyncio.sleep(0.5)  # 알림음과 음성 메시지 사이 간격
+                        await asyncio.sleep(1)  # 알림음이 완전히 재생될 때까지 대기
                     
-                    # 2. 브레이크 음성 메시지 재생
-                    break_audio = await create_break_audio()
+                    # 2. 브레이크 음성 메시지 생성 및 재생
+                    break_msg = "쉬는 시간입니다, 5초간의 휴식을 느껴보세요"
+                    break_audio = await create_audio(break_msg, VOICE_MAPPING['korean']['선희'], 1.0)
                     if break_audio:
                         play_audio(break_audio)
+                        # 음성 메시지 재생 시간 계산 (대략적으로 메시지 길이에 따라)
+                        await asyncio.sleep(3)  # 메시지가 재생될 때까지 대기
                     
-                    # 3. 설정된 휴식 시간만큼 대기
-                    time.sleep(settings['break_duration'])
+                    # 3. 남은 휴식 시간 대기
+                    remaining_time = max(0, settings['break_duration'] - 4)  # 알림음과 메시지 재생 시간을 고려
+                    if remaining_time > 0:
+                        await asyncio.sleep(remaining_time)
+                    
                     status.empty()
                     
                 except Exception as e:
@@ -751,7 +753,7 @@ async def start_learning():
 
         # 학습 완료 시
         try:
-            # final.wav 재생
+            # final.wav 재생 - 자동 반복 여부와 관계없이 항상 재생
             final_sound_path = SCRIPT_DIR / 'base/final.wav'
             if final_sound_path.exists():
                 play_audio(str(final_sound_path))
