@@ -19,7 +19,7 @@ import base64
 
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
-SETTINGS_PATH = SCRIPT_DIR / 'settings.json'
+SETTINGS_PATH = SCRIPT_DIR / '/base/settings.json'
 EXCEL_PATH = SCRIPT_DIR / 'base/en600new.xlsx'
 TEMP_DIR = SCRIPT_DIR / 'temp'  # 임시 파일 저장 경로 추가
 
@@ -43,8 +43,8 @@ VOICE_MAPPING = {
     'chinese': {
         "샤오샤오": "zh-CN-XiaoxiaoNeural",
         "윈시": "zh-CN-YunxiNeural",
-        "윈지엔": "zh-CN-YunjianNeural",
-        "윈양": "zh-CN-YunyangNeural"
+        "Yunjian": "zh-CN-YunjianNeural",
+        "Yunyang": "zh-CN-YunyangNeural"
     }
 }
 
@@ -74,17 +74,17 @@ def initialize_session_state():
             'first_lang': 'korean',
             'second_lang': 'english',
             'third_lang': 'chinese',
-            'first_repeat': 1,
+            'first_repeat': 0,
             'second_repeat': 1,
-            'third_repeat': 0,
+            'third_repeat': 1,
             'kor_voice': '선희',
             'eng_voice': 'Steffan',
-            'zh_voice': 'yunjian',
-            'start_row': 1,
-            'end_row': 10,
-            'word_delay': 0.1,
+            'zh_voice': 'Yunjian',
+            'start_row': 301,
+            'end_row': 350,
+            'word_delay': 0.5,
             'spacing': 0.5,
-            'english_speed': 2.0,
+            'english_speed': 3.0,
             'korean_speed': 2.0,
             'chinese_speed': 2.0,
             'subtitle_delay': 0.5,
@@ -96,7 +96,7 @@ def initialize_session_state():
             'english_font': 'Pretendard',
             'korean_font': 'Pretendard',
             'chinese_font': 'SimSun',
-            'english_color': '#FFFF00',
+            'english_color': '#00FF00',
             'korean_color': '#FFFFFF',
             'chinese_color': '#00FF00',
             'english_font_size': 32,
@@ -572,7 +572,7 @@ def create_learning_ui():
 
 async def create_break_audio():
     """브레이크 음성 생성"""
-    break_msg = "쉬는 시간입니다, 5초간의 휴식을 느껴보세요"
+    break_msg = "쉬는 시간입니다, 5초간의 여유를 느껴보세요"
     break_voice = VOICE_MAPPING['korean']['선희']
     audio_file = await create_audio(break_msg, break_voice, 1.0)
     return audio_file
@@ -601,7 +601,6 @@ async def start_learning():
     # 학습 UI 생성
     progress = st.progress(0)
     status = st.empty()
-    subtitles = [st.empty() for _ in range(3)]  # 자막을 위한 빈 공간 생성
     
     # 상단 컨트롤 패널
     col1, col2, col3, col4 = st.columns([0.25, 0.25, 0.25, 0.25])
@@ -615,9 +614,115 @@ async def start_learning():
             st.session_state.page = 'settings'
             st.rerun()
     with col3:
-        auto_repeat = st.checkbox("자동 반복", value=True, key="auto_repeat_checkbox")
+        auto_repeat = st.checkbox("자동 반복", value=settings.get('auto_repeat', True), key="auto_repeat_checkbox")
     with col4:
         hide_all = st.checkbox("전체 자막 숨기기", value=False, key="hide_all_checkbox")
+
+    # 실시간 설정 변경 UI
+    with st.expander("학습 설정 조정", expanded=False):
+        # 배속 설정
+        st.subheader("배속 설정")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            settings['korean_speed'] = st.number_input("한글 배속",
+                                                     value=settings['korean_speed'],
+                                                     min_value=0.1,
+                                                     step=0.1,
+                                                     format="%.1f",
+                                                     key="korean_speed_learning")
+        with col2:
+            settings['english_speed'] = st.number_input("영어 배속",
+                                                      value=settings['english_speed'],
+                                                      min_value=0.1,
+                                                      step=0.1,
+                                                      format="%.1f",
+                                                      key="english_speed_learning")
+        with col3:
+            settings['chinese_speed'] = st.number_input("중국어 배속",
+                                                      value=settings['chinese_speed'],
+                                                      min_value=0.1,
+                                                      step=0.1,
+                                                      format="%.1f",
+                                                      key="chinese_speed_learning")
+
+        # 반복 설정
+        st.subheader("반복 설정")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            settings['first_repeat'] = st.number_input("1순위 반복",
+                                                     value=settings['first_repeat'],
+                                                     min_value=0,
+                                                     step=1,
+                                                     key="first_repeat_learning")
+        with col2:
+            settings['second_repeat'] = st.number_input("2순위 반복",
+                                                      value=settings['second_repeat'],
+                                                      min_value=0,
+                                                      step=1,
+                                                      key="second_repeat_learning")
+        with col3:
+            settings['third_repeat'] = st.number_input("3순위 반복",
+                                                     value=settings['third_repeat'],
+                                                     min_value=0,
+                                                     step=1,
+                                                     key="third_repeat_learning")
+
+        # 음성 설정
+        st.subheader("음성 설정")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            settings['kor_voice'] = st.selectbox("한글 음성",
+                                               options=list(VOICE_MAPPING['korean'].keys()),
+                                               index=list(VOICE_MAPPING['korean'].keys()).index(settings['kor_voice']),
+                                               key="kor_voice_learning")
+        with col2:
+            settings['eng_voice'] = st.selectbox("영어 음성",
+                                               options=list(VOICE_MAPPING['english'].keys()),
+                                               index=list(VOICE_MAPPING['english'].keys()).index(settings['eng_voice']),
+                                               key="eng_voice_learning")
+        with col3:
+            settings['zh_voice'] = st.selectbox("중국어 음성",
+                                              options=list(VOICE_MAPPING['chinese'].keys()),
+                                              index=list(VOICE_MAPPING['chinese'].keys()).index(settings['zh_voice']),
+                                              key="zh_voice_learning")
+
+        # 폰트 설정
+        st.subheader("폰트 설정")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            settings['korean_font'] = st.selectbox("한글 폰트",
+                                                 options=['Pretendard', '맑은 고딕', '나눔고딕', '굴림'],
+                                                 index=['Pretendard', '맑은 고딕', '나눔고딕', '굴림'].index(settings['korean_font']),
+                                                 key="korean_font_learning")
+        with col2:
+            settings['english_font'] = st.selectbox("영어 폰트",
+                                                  options=['Pretendard', 'Arial', 'Times New Roman', 'Verdana'],
+                                                  index=['Pretendard', 'Arial', 'Times New Roman', 'Verdana'].index(settings['english_font']),
+                                                  key="english_font_learning")
+        with col3:
+            settings['chinese_font'] = st.selectbox("중국어 폰트",
+                                                  options=['SimSun', 'Microsoft YaHei', 'SimHei'],
+                                                  index=['SimSun', 'Microsoft YaHei', 'SimHei'].index(settings['chinese_font']),
+                                                  key="chinese_font_learning")
+
+        # 색상 설정
+        st.subheader("색상 설정")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            settings['korean_color'] = st.color_picker("한글 색상",
+                                                     value=settings['korean_color'],
+                                                     key="korean_color_learning")
+        with col2:
+            settings['english_color'] = st.color_picker("영어 색상",
+                                                      value=settings['english_color'],
+                                                      key="english_color_learning")
+        with col3:
+            settings['chinese_color'] = st.color_picker("중국어 색상",
+                                                      value=settings['chinese_color'],
+                                                      key="chinese_color_learning")
+
+    # 자막 표시를 위한 빈 컨테이너
+    subtitles = [st.empty() for _ in range(3)]
 
     while True:
         for i, (eng, kor, chn) in enumerate(zip(english, korean, chinese)):
@@ -652,8 +757,16 @@ async def start_learning():
             # 자막 표시
             if not hide_all:
                 texts = {'english': eng, 'korean': kor, 'chinese': chn}
-                colors = {'english': '#FFFF00', 'korean': '#FFFFFF', 'chinese': '#00FF00'}
-                fonts = {'english': 'Times New Roman', 'korean': 'Pretendard', 'chinese': 'SimSun'}
+                colors = {
+                    'english': settings['english_color'],
+                    'korean': settings['korean_color'],
+                    'chinese': settings['chinese_color']
+                }
+                fonts = {
+                    'english': settings['english_font'],
+                    'korean': settings['korean_font'],
+                    'chinese': settings['chinese_font']
+                }
                 
                 # 순위에 따라 자막 표시
                 langs = [settings['first_lang'], settings['second_lang'], settings['third_lang']]
