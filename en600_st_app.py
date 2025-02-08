@@ -87,7 +87,7 @@ def initialize_session_state():
             'break_duration': 5,
             'next_sentence_time': 0.5,
             'english_font': 'Arial',
-            'korean_font': '맑은 고딕',
+            'korean_font': 'Pretendard',
             'chinese_font': 'SimSun',
             'english_color': '#FFFF00',
             'korean_color': '#FFFFFF',
@@ -109,7 +109,7 @@ def initialize_session_state():
         st.warning("브레이크 알림음 파일이 없습니다. 기본 알림음을 생성합니다.")
         try:
             # 기본 알림음 생성 (북소리)
-            communicate = edge_tts.Communicate("띵", "ko-KR-SunHiNeural")
+            communicate = edge_tts.Communicate("딩동", "ko-KR-SunHiNeural")
             asyncio.run(communicate.save(str(break_sound_path)))
         except Exception as e:
             st.error(f"알림음 생성 오류: {e}")
@@ -592,8 +592,8 @@ def create_learning_ui():
 
 async def create_break_audio():
     """브레이크 음성 생성"""
-    break_msg = "5 second Break Time"
-    break_voice = VOICE_MAPPING['english']['Jenny']
+    break_msg = "쉬는 시간입니다, 5초간의 휴식을 느껴보세요"
+    break_voice = VOICE_MAPPING['korean']['선희']
     audio_file = await create_audio(break_msg, break_voice, 1.0)
     return audio_file
 
@@ -646,12 +646,13 @@ async def start_learning():
             # 진행 상태와 배속 정보 표시
             ko_speed = settings['korean_speed']
             eng_speed = settings['english_speed']
-            
+            zh_speed = settings['chinese_speed']
             ko_speed_text = str(int(ko_speed)) if ko_speed.is_integer() else f"{ko_speed:.1f}"
             eng_speed_text = str(int(eng_speed)) if eng_speed.is_integer() else f"{eng_speed:.1f}"
+            zh_speed_text = str(int(zh_speed)) if zh_speed.is_integer() else f"{zh_speed:.1f}"
             
             status.markdown(
-                f'학습 진행중... {i+1}/{total_sentences} <span style="color: #00FF00">한글 {ko_speed_text}배 | 영어 {eng_speed_text}배</span>',
+                f'학습 진행중... {i+1}/{total_sentences} <span style="color: #00FF00"> | 한글 {ko_speed_text}배 | 영어 {eng_speed_text}배 | 중국어 {zh_speed_text}배</span>',
                 unsafe_allow_html=True
             )
 
@@ -728,11 +729,24 @@ async def start_learning():
             if settings['break_enabled'] and sentence_count % settings['break_interval'] == 0:
                 try:
                     status.warning(f"🔄 {settings['break_interval']}문장 완료! {settings['break_duration']}초간 휴식...")
-                    play_break_sound()  # 브레이크 알림음 재생
-                    time.sleep(settings['break_duration'])  # 설정된 시간만큼 휴식
+                    
+                    # 1. 먼저 break.wav 알림음 재생
+                    break_sound_path = SCRIPT_DIR / 'base/break.wav'
+                    if break_sound_path.exists():
+                        play_audio(str(break_sound_path))
+                        await asyncio.sleep(0.5)  # 알림음과 음성 메시지 사이 간격
+                    
+                    # 2. 브레이크 음성 메시지 재생
+                    break_audio = await create_break_audio()
+                    if break_audio:
+                        play_audio(break_audio)
+                    
+                    # 3. 설정된 휴식 시간만큼 대기
+                    time.sleep(settings['break_duration'])
                     status.empty()
+                    
                 except Exception as e:
-                    st.error(f"브레이크 알림음 재생 오류: {e}")
+                    st.error(f"브레이크 처리 중 오류: {e}")
                     traceback.print_exc()
 
         # 학습 완료 시
