@@ -100,10 +100,11 @@ def initialize_session_state():
                 'second_lang': False,
                 'third_lang': False
             },
+            'auto_repeat': False,
         }
 
     # break.wav 파일 존재 여부 확인
-    break_sound_path = SCRIPT_DIR / 'break.wav'
+    break_sound_path = SCRIPT_DIR / './base/break.wav'
     if not break_sound_path.exists():
         st.warning("브레이크 알림음 파일이 없습니다. 기본 알림음을 생성합니다.")
         try:
@@ -114,163 +115,27 @@ def initialize_session_state():
             st.error(f"알림음 생성 오류: {e}")
 
 def create_settings_ui():
-    # 엑셀 파일에서 최대 행 수 확인
-    try:
-        df = pd.read_excel(EXCEL_PATH, header=None)
-        max_row = len(df)
-    except Exception as e:
-        st.error(f"엑셀 파일 읽기 오류: {e}")
-        max_row = 1  # 기본값 설정
-        
-    # 기본 폰트 크기 설정
-    size = 24  # 기본 폰트 크기
-    title_size = 32  # 제목 크기
-    subtitle_size = 24  # 부제목 크기
-
-    # CSS를 사용하여 Pretendard-Bold 폰트와 기본 색상 적용
-    st.markdown("""
-        <style>
-            @font-face {
-                font-family: 'Pretendard';
-                src: url('base/Pretendard-Bold.otf') format('opentype');
-                font-weight: bold;
-            }
-            
-            /* 영어 텍스트 스타일 */
-            .english-text {
-                font-family: 'Times New Roman', serif !important;
-                color: #FFFF00 !important;
-            }
-            
-            /* 한글 텍스트 스타일 */
-            .korean-text {
-                font-family: 'Pretendard', sans-serif !important;
-                color: #FFFFFF !important;
-            }
-            
-            /* 중국어 텍스트 스타일 */
-            .chinese-text {
-                font-family: 'SimSun', serif !important;
-                color: #00FF00 !important;
-            }
-            
-            /* 나머지 UI 요소 스타일 */
-            .stMarkdown, .stText, div, label, input, button, select, .stSelectbox, 
-            div[data-baseweb="select"] span, .stNumberInput input {
-                font-family: 'Pretendard', sans-serif !important;
-                font-size: 28px !important;  /* 36px에서 28px로 축소 */
-            }
-            
-            /* 제목 스타일 */
-            .stTitle h1 {
-                font-family: 'Pretendard', sans-serif !important;
-                font-size: 20px !important;  /* 24px에서 20px로 축소 */
-            }
-            
-            /* 부제목 스타일 */
-            .stSubheader h2 {
-                font-family: 'Pretendard', sans-serif !important;
-                font-size: 18px !important;  /* 20px에서 18px로 축소 */
-            }
-            
-            /* 숫자 입력 필드와 레이블 */
-            .stNumberInput label, 
-            .stSelectbox label, 
-            .stCheckbox label,
-            .stNumberInput input,
-            .stSelectbox > div,
-            .stCheckbox span p {
-                font-size: 24px !important;  /* 36px에서 24px로 축소 */
-                line-height: 1.5 !important;
-            }
-            
-            /* 콤보박스 드롭다운 메뉴 */
-            [data-baseweb="popover"] * {
-                font-size: 24px !important;  /* 36px에서 24px로 축소 */
-            }
-            
-            /* 버튼 텍스트 */
-            .stButton > button {
-                font-size: 24px !important;  /* 36px에서 24px로 축소 */
-                padding: 0.3rem 0.8rem !important;  /* 패딩도 약간 축소 */
-            }
-            
-            /* 진행 상태 텍스트 */
-            .status-text {
-                font-size: 22px !important;  /* 진행 상태 텍스트 크기 조정 */
-            }
-            
-            /* 콤보박스 컨테이너 스타일 수정 */
-            div[data-baseweb="select"] {
-                min-height: 45px !important;  /* 높이 증가 */
-            }
-            
-            /* 콤보박스 내부 텍스트 컨테이너 */
-            div[data-baseweb="select"] > div {
-                min-height: 45px !important;  /* 높이 증가 */
-                padding: 8px 12px !important;  /* 상하 패딩 증가 */
-                display: flex !important;
-                align-items: center !important;
-            }
-            
-            /* 드롭다운 메뉴 아이템 */
-            div[role="listbox"] [role="option"] {
-                min-height: 45px !important;  /* 높이 증가 */
-                padding: 8px 12px !important;  /* 상하 패딩 증가 */
-                display: flex !important;
-                align-items: center !important;
-            }
-            
-            /* 콤보박스 선택된 값 */
-            div[data-baseweb="select"] span {
-                line-height: 28px !important;  /* 줄 높이 조정 */
-                vertical-align: middle !important;
-            }
-            
-            /* 콤보박스 레이블 */
-            div.stSelectbox label {
-                margin-bottom: 5px !important;  /* 레이블과 콤보박스 사이 간격 */
-                line-height: 1.5 !important;
-            }
-            
-            /* 콤보박스 전체 컨테이너 */
-            div.stSelectbox {
-                margin-bottom: 10px !important;  /* 콤보박스 간 간격 */
-            }
-        </style>
-    """, unsafe_allow_html=True)
-
-    # 제목을 최상단에 배치
-    st.title("도파민 대충영어")
+    """설정 화면 UI 생성"""
+    settings = st.session_state.settings  # settings 변수를 함수 시작 시 정의
     
-    # 시작/종료 번호와 학습 시작 버튼을 제목 바로 아래에 배치
-    col1, col2, col3 = st.columns([0.3, 0.3, 0.4])
+    # 제목과 학습 시작 버튼을 같은 줄에 배치
+    col1, col2 = st.columns([0.7, 0.3])
     with col1:
-        start_row = st.number_input("시작번호",
-                                  value=st.session_state.settings['start_row'],
-                                  min_value=1,
-                                  max_value=max_row,
-                                  key="start_row",
-                                  format="%d")
+        st.title("대충영어")
     with col2:
-        end_row = st.number_input("종료번호",
-                                value=st.session_state.settings['end_row'],
-                                min_value=1,
-                                max_value=max_row,
-                                key="end_row",
-                                format="%d")
-    with col3:
-        st.markdown("""
-        <style>
-            div[data-testid="column"]:nth-child(3) button {{
-                margin-top: 20px;  /* 기존 margin-top에서 10px 추가 */
-                width: 50% !important;  /* 너비를 반으로 축소 */
-            }}
-        </style>
-        """, unsafe_allow_html=True)
-        if st.button("학습 시작", use_container_width=True):
+        # 엑셀 파일에서 최대 행 수 가져오기
+        try:
+            df = pd.read_excel(EXCEL_PATH, header=None)
+            max_row = len(df)
+        except Exception as e:
+            st.error(f"엑셀 파일 읽기 오류: {e}")
+            return
+            
+        if st.button("학습 시작", use_container_width=True, key="start_learning_btn"):
             # 최종 유효성 검사
             error_messages = []
+            start_row = settings['start_row']
+            end_row = settings['end_row']
             
             if start_row > end_row:
                 error_messages.append("🚨 시작 번호는 종료 번호보다 작아야 합니다")
@@ -285,84 +150,116 @@ def create_settings_ui():
                 for msg in error_messages:
                     st.error(msg)
             else:
-                st.session_state.settings.update({
-                    'start_row': start_row,
-                    'end_row': end_row
-                })
                 st.session_state.page = 'learning'
                 st.rerun()
 
-    # 빈 공간 추가
-    st.markdown("<div style='height: 1em'></div>", unsafe_allow_html=True)
+    # 시작/종료 번호 입력창을 제목 바로 아래로 이동
+    col1, col2 = st.columns(2)
+    with col1:
+        settings['start_row'] = st.number_input("시작번호",
+                                              value=settings['start_row'],
+                                              min_value=1,
+                                              max_value=max_row,
+                                              key="start_row_input",
+                                              format="%d")
+    with col2:
+        settings['end_row'] = st.number_input("종료번호",
+                                            value=settings['end_row'],
+                                            min_value=1,
+                                            max_value=max_row,
+                                            key="end_row_input",
+                                            format="%d")
+
+    # 언어 순서 설정
+    st.subheader("언어 순서")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        settings['first_lang'] = st.selectbox("1순위 언어",
+            options=['korean', 'english', 'chinese'],
+            index=['korean', 'english', 'chinese'].index(settings['first_lang']),
+            format_func=lambda x: LANG_DISPLAY[x],
+            key="settings_first_lang")
+    with col2:
+        settings['second_lang'] = st.selectbox("2순위 언어",
+            options=['korean', 'english', 'chinese'],
+            index=['korean', 'english', 'chinese'].index(settings['second_lang']),
+            format_func=lambda x: LANG_DISPLAY[x],
+            key="settings_second_lang")
+    with col3:
+        settings['third_lang'] = st.selectbox("3순위 언어",
+            options=['korean', 'english', 'chinese'],
+            index=['korean', 'english', 'chinese'].index(settings['third_lang']),
+            format_func=lambda x: LANG_DISPLAY[x],
+            key="settings_third_lang")
 
     # 1순위 설정
     col1, col2, col3 = st.columns(3)  # 동일한 너비로 설정
     with col1:
         first_lang = st.selectbox("1순위",
                                 options=[LANG_DISPLAY[l] for l in LANGUAGES],
-                                index=LANGUAGES.index(st.session_state.settings['first_lang']),
+                                index=LANGUAGES.index(settings['first_lang']),
                                 key="first_lang")
     with col2:
         first_repeat = st.number_input("반복",
-                                     value=st.session_state.settings['first_repeat'],
+                                     value=settings['first_repeat'],
                                      min_value=0,
                                      key="first_repeat",
                                      format="%d")
     with col3:
-        speed_key = f"{st.session_state.settings['first_lang']}_speed"
+        speed_key = f"{settings['first_lang']}_speed"
         first_speed = st.number_input("배속",
-                                    value=st.session_state.settings[speed_key],
+                                    value=settings[speed_key],
                                     min_value=0.1,
                                     step=0.1,
                                     format="%.1f",
                                     key="first_speed")
-        st.session_state.settings[speed_key] = first_speed
+        settings[speed_key] = first_speed
 
     # 2순위 설정
     col1, col2, col3 = st.columns(3)
     with col1:
         second_lang = st.selectbox("2순위",
                                  options=[LANG_DISPLAY[l] for l in LANGUAGES],
-                                 index=LANGUAGES.index(st.session_state.settings['second_lang']),
+                                 index=LANGUAGES.index(settings['second_lang']),
                                  key="second_lang")
     with col2:
         second_repeat = st.number_input("반복 ",
-                                      value=st.session_state.settings['second_repeat'],
+                                      value=settings['second_repeat'],
                                       min_value=0,
                                       key="second_repeat",
                                       format="%d")
     with col3:
-        speed_key = f"{st.session_state.settings['second_lang']}_speed"
+        speed_key = f"{settings['second_lang']}_speed"
         second_speed = st.number_input("배속 ",
-                                     value=st.session_state.settings[speed_key],
+                                     value=settings[speed_key],
                                      min_value=0.1,
                                      step=0.1,
                                      format="%.1f",
                                      key="second_speed")
-        st.session_state.settings[speed_key] = second_speed
+        settings[speed_key] = second_speed
 
     # 3순위 설정
     col1, col2, col3 = st.columns(3)
     with col1:
         third_lang = st.selectbox("3순위",
                                 options=[LANG_DISPLAY[l] for l in LANGUAGES],
-                                index=LANGUAGES.index(st.session_state.settings['third_lang']),
+                                index=LANGUAGES.index(settings['third_lang']),
                                 key="third_lang")
     with col2:
         third_repeat = st.number_input("반복  ",
-                                     value=st.session_state.settings['third_repeat'],
+                                     value=settings['third_repeat'],
                                      min_value=0,
                                      key="third_repeat",
                                      format="%d")
     with col3:
-        speed_key = f"{st.session_state.settings['third_lang']}_speed"
+        speed_key = f"{settings['third_lang']}_speed"
         third_speed = st.number_input("배속  ",
-                                    value=st.session_state.settings[speed_key],
+                                    value=settings[speed_key],
                                     min_value=0.1,
                                     step=0.1,
                                     format="%.1f",
                                     key="third_speed")
-        st.session_state.settings[speed_key] = third_speed
+        settings[speed_key] = third_speed
 
     # 빈 공간 추가
     st.markdown("<div style='height: 1em'></div>", unsafe_allow_html=True)
@@ -371,15 +268,15 @@ def create_settings_ui():
     col1, col2, col3 = st.columns(3)
     with col1:
         hide_first = st.checkbox("1순위 자막 숨김",
-                               value=st.session_state.settings['hide_subtitles']['first_lang'],
+                               value=settings['hide_subtitles']['first_lang'],
                                key="first_hide")
     with col2:
         hide_second = st.checkbox("2순위 자막 숨김",
-                                value=st.session_state.settings['hide_subtitles']['second_lang'],
+                                value=settings['hide_subtitles']['second_lang'],
                                 key="second_hide")
     with col3:
         hide_third = st.checkbox("3순위 자막 숨김",
-                               value=st.session_state.settings['hide_subtitles']['third_lang'],
+                               value=settings['hide_subtitles']['third_lang'],
                                key="third_hide")
 
     # 빈 공간 추가
@@ -393,17 +290,17 @@ def create_settings_ui():
     with col1:
         eng_voice = st.selectbox("EN 음성",
                                options=list(VOICE_MAPPING['english'].keys()),
-                               index=list(VOICE_MAPPING['english'].keys()).index(st.session_state.settings['eng_voice']),
+                               index=list(VOICE_MAPPING['english'].keys()).index(settings['eng_voice']),
                                key="eng_voice")
     with col2:
         kor_voice = st.selectbox("KO 음성",
                                options=list(VOICE_MAPPING['korean'].keys()),
-                               index=list(VOICE_MAPPING['korean'].keys()).index(st.session_state.settings['kor_voice']),
+                               index=list(VOICE_MAPPING['korean'].keys()).index(settings['kor_voice']),
                                key="kor_voice")
     with col3:
         zh_voice = st.selectbox("CH 음성",
                               options=list(VOICE_MAPPING['chinese'].keys()),
-                              index=list(VOICE_MAPPING['chinese'].keys()).index(st.session_state.settings['zh_voice']),
+                              index=list(VOICE_MAPPING['chinese'].keys()).index(settings['zh_voice']),
                               key="zh_voice")
 
     # 재생 설정
@@ -413,28 +310,28 @@ def create_settings_ui():
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         spacing = st.number_input("문장 간격",
-                                value=st.session_state.settings['spacing'],
+                                value=settings['spacing'],
                                 min_value=0.1,
                                 step=0.1,
                                 format="%.1f",
                                 key="spacing")
     with col2:
         subtitle_delay = st.number_input("자막 딜레이",
-                                       value=st.session_state.settings['subtitle_delay'],
+                                       value=settings['subtitle_delay'],
                                        min_value=0.1,
                                        step=0.1,
                                        format="%.1f",
                                        key="subtitle_delay")
     with col3:
         next_sentence_time = st.number_input("다음 문장",
-                                           value=st.session_state.settings['next_sentence_time'],
+                                           value=settings['next_sentence_time'],
                                            min_value=0.1,
                                            step=0.1,
                                            format="%.1f",
                                            key="next_sentence_time")
     with col4:
         break_interval = st.number_input("브레이크",
-                                       value=st.session_state.settings['break_interval'],
+                                       value=settings['break_interval'],
                                        min_value=1,
                                        step=1,
                                        key="break_interval")
@@ -443,15 +340,15 @@ def create_settings_ui():
     col1, col2 = st.columns(2)
     with col1:
         keep_subtitles = st.checkbox("자막 유지",
-                                   value=st.session_state.settings['keep_subtitles'],
+                                   value=settings['keep_subtitles'],
                                    key="keep_subtitles")
     with col2:
         break_enabled = st.checkbox("🔄 브레이크",
-                                  value=st.session_state.settings['break_enabled'],
+                                  value=settings['break_enabled'],
                                   key="break_enabled")
 
     # 설정값 업데이트
-    st.session_state.settings['hide_subtitles'] = {
+    settings['hide_subtitles'] = {
         'first_lang': hide_first,
         'second_lang': hide_second,
         'third_lang': hide_third
@@ -465,17 +362,17 @@ def create_settings_ui():
     with col1:
         eng_font = st.selectbox("영어 폰트",
                               options=['Arial', 'Times New Roman', 'Verdana'],
-                              index=['Arial', 'Times New Roman', 'Verdana'].index(st.session_state.settings.get('english_font', 'Arial')),
+                              index=['Arial', 'Times New Roman', 'Verdana'].index(settings.get('english_font', 'Arial')),
                               key="eng_font")
     with col2:
         eng_color = st.color_picker("영어 색상",
-                                  value=st.session_state.settings.get('english_color', '#000000'),
+                                  value=settings.get('english_color', '#000000'),
                                   key="eng_color")
     with col3:
         eng_size = st.number_input("영어 폰트",
                                  min_value=12,
                                  max_value=72,
-                                 value=st.session_state.settings.get('english_font_size', 32),
+                                 value=settings.get('english_font_size', 32),
                                  step=2,
                                  key="eng_font_size")
     
@@ -484,17 +381,17 @@ def create_settings_ui():
     with col1:
         kor_font = st.selectbox("한글 폰트",
                               options=['Pretendard', '맑은 고딕', '나눔고딕', '굴림'],
-                              index=['Pretendard', '맑은 고딕', '나눔고딕', '굴림'].index(st.session_state.settings.get('korean_font', 'Pretendard')),
+                              index=['Pretendard', '맑은 고딕', '나눔고딕', '굴림'].index(settings.get('korean_font', 'Pretendard')),
                               key="kor_font")
     with col2:
         kor_color = st.color_picker("한글 색상",
-                                  value=st.session_state.settings.get('korean_color', '#FFFFFF'),
+                                  value=settings.get('korean_color', '#FFFFFF'),
                                   key="kor_color")
     with col3:
         kor_size = st.number_input("한글 폰트",
                                  min_value=12,
                                  max_value=72,
-                                 value=st.session_state.settings.get('korean_font_size', 32),
+                                 value=settings.get('korean_font_size', 32),
                                  step=2,
                                  key="kor_font_size")
     
@@ -503,17 +400,17 @@ def create_settings_ui():
     with col1:
         zh_font = st.selectbox("중문 폰트",
                              options=['SimSun', 'Microsoft YaHei', 'SimHei'],
-                             index=['SimSun', 'Microsoft YaHei', 'SimHei'].index(st.session_state.settings.get('chinese_font', 'SimSun')),
+                             index=['SimSun', 'Microsoft YaHei', 'SimHei'].index(settings.get('chinese_font', 'SimSun')),
                              key="zh_font")
     with col2:
         zh_color = st.color_picker("중문 색상",
-                                 value=st.session_state.settings.get('chinese_color', '#FF0000'),
+                                 value=settings.get('chinese_color', '#FF0000'),
                                  key="zh_color")
     with col3:
         zh_size = st.number_input("중문 폰트",
                                 min_value=12,
                                 max_value=72,
-                                value=st.session_state.settings.get('chinese_font_size', 32),
+                                value=settings.get('chinese_font_size', 32),
                                 step=2,
                                 key="zh_font_size")
 
@@ -554,7 +451,7 @@ def create_settings_ui():
     """, unsafe_allow_html=True)
 
     # 설정값 업데이트 - 모든 설정값을 한 번에 업데이트
-    st.session_state.settings.update({
+    settings.update({
         'first_lang': [k for k, v in LANG_DISPLAY.items() if v == first_lang][0],
         'second_lang': [k for k, v in LANG_DISPLAY.items() if v == second_lang][0],
         'third_lang': [k for k, v in LANG_DISPLAY.items() if v == third_lang][0],
@@ -584,12 +481,14 @@ def create_settings_ui():
         'chinese_font_size': zh_size,
     })
 
-    # 설정값을 파일에 저장
-    try:
-        with open(SETTINGS_PATH, 'w', encoding='utf-8') as f:
-            json.dump(st.session_state.settings, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        st.error(f"설정 저장 중 오류: {e}")
+    # 설정값 업데이트
+    settings.update({
+        'start_row': settings['start_row'],
+        'end_row': settings['end_row']
+    })
+
+    # Save settings
+    save_settings(settings)
 
 def play_audio(file_path):
     """음성 파일 재생"""
@@ -691,9 +590,17 @@ def create_learning_ui():
     
     return progress, status, subtitles
 
+async def create_break_audio():
+    """브레이크 음성 생성"""
+    break_msg = "5 second Break Time"
+    break_voice = VOICE_MAPPING['english']['Jenny']
+    audio_file = await create_audio(break_msg, break_voice, 1.0)
+    return audio_file
+
 async def start_learning():
     """학습 시작"""
     settings = st.session_state.settings
+    sentence_count = 0
     
     # 엑셀에서 문장 가져오기
     try:
@@ -705,128 +612,112 @@ async def start_learning():
         english = selected_data.iloc[:, 0].tolist()
         korean = selected_data.iloc[:, 1].tolist()
         chinese = selected_data.iloc[:, 2].tolist()
+        total_sentences = len(english)
         
     except Exception as e:
         st.error(f"엑셀 파일 읽기 오류: {e}")
         return
-    
+
     # 학습 UI 생성
-    progress, status, subtitles = create_learning_ui()
+    progress = st.progress(0)
+    status = st.empty()
+    subtitles = [st.empty() for _ in range(3)]  # 자막을 위한 빈 공간 생성
     
     # 상단 컨트롤 패널
     col1, col2, col3, col4 = st.columns([0.25, 0.25, 0.25, 0.25])
     with col1:
-        if st.button("일시정지", use_container_width=True):
+        if st.button("일시정지", use_container_width=True, key="pause_btn"):
             st.warning("일시정지 중입니다. 계속하려면 '재개' 버튼을 누르세요.")
-            if st.button("재개", use_container_width=True):
+            if st.button("재개", use_container_width=True, key="resume_btn"):
                 st.rerun()
     with col2:
-        if st.button("학습 종료", use_container_width=True):
+        if st.button("학습 종료", use_container_width=True, key="stop_btn"):
             st.session_state.page = 'settings'
             st.rerun()
     with col3:
-        auto_repeat = st.checkbox("자동 반복", value=True, key="auto_repeat")
+        auto_repeat = st.checkbox("자동 반복", value=True, key="auto_repeat_checkbox")
     with col4:
-        hide_all = st.checkbox("전체 자막 숨기기", value=False, key="hide_all")
-    
-    # 학습 진행
-    total_sentences = len(english)
-    sentence_count = 0
-    
+        hide_all = st.checkbox("전체 자막 숨기기", value=False, key="hide_all_checkbox")
+
     while True:
         for i, (eng, kor, chn) in enumerate(zip(english, korean, chinese)):
             progress.progress((i + 1) / total_sentences)
             
             # 진행 상태와 배속 정보 표시
-            speed_info = []
-            ko_speed = st.session_state.settings['korean_speed']
-            eng_speed = st.session_state.settings['english_speed']
+            ko_speed = settings['korean_speed']
+            eng_speed = settings['english_speed']
             
             ko_speed_text = str(int(ko_speed)) if ko_speed.is_integer() else f"{ko_speed:.1f}"
             eng_speed_text = str(int(eng_speed)) if eng_speed.is_integer() else f"{eng_speed:.1f}"
             
-            # 배속 정보를 초록색으로 표시
             status.markdown(
-                f'학습 진행중... {i+1}/{total_sentences} <span style="color: #00FF00"> 한글 {ko_speed_text}배 | 영어 {eng_speed_text}배</span>',
+                f'학습 진행중... {i+1}/{total_sentences} <span style="color: #00FF00">한글 {ko_speed_text}배 | 영어 {eng_speed_text}배</span>',
                 unsafe_allow_html=True
             )
-            
+
             # 자막 표시
             if not hide_all:
-                # 영어 자막
-                subtitles[0].markdown(
-                    f'<p style="font-family: Times New Roman; color: #FFFF00; font-size: {settings["english_font_size"]}px;">{eng}</p>',
-                    unsafe_allow_html=True
-                )
-                # 한글 자막
-                subtitles[1].markdown(
-                    f'<p style="font-family: Pretendard; color: #FFFFFF; font-size: {settings["korean_font_size"]}px;">{kor}</p>',
-                    unsafe_allow_html=True
-                )
-                # 중국어 자막
-                subtitles[2].markdown(
-                    f'<p style="font-family: SimSun; color: #00FF00; font-size: {settings["chinese_font_size"]}px;">{chn}</p>',
-                    unsafe_allow_html=True
-                )
+                texts = {'english': eng, 'korean': kor, 'chinese': chn}
+                colors = {'english': '#FFFF00', 'korean': '#FFFFFF', 'chinese': '#00FF00'}
+                fonts = {'english': 'Times New Roman', 'korean': 'Pretendard', 'chinese': 'SimSun'}
+                
+                # 순위에 따라 자막 표시
+                langs = [settings['first_lang'], settings['second_lang'], settings['third_lang']]
+                for idx, lang in enumerate(langs):
+                    subtitles[idx].markdown(
+                        f'<p style="font-family: {fonts[lang]}; color: {colors[lang]}; font-size: {settings[f"{lang}_font_size"]}px;">{texts[lang]}</p>',
+                        unsafe_allow_html=True
+                    )
 
             # 음성 재생
             try:
                 # 첫 번째 언어
                 first_lang = settings['first_lang']
                 if first_lang == 'korean':
-                    for _ in range(settings['first_repeat']):
-                        audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
-                        play_audio(audio_file)
-                        await asyncio.sleep(settings['spacing'])
+                    audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
+                    play_audio(audio_file)
+                    await asyncio.sleep(settings['spacing'])
                 elif first_lang == 'english':
-                    for _ in range(settings['first_repeat']):
-                        audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
-                        play_audio(audio_file)
-                        await asyncio.sleep(settings['spacing'])
+                    audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
+                    play_audio(audio_file)
+                    await asyncio.sleep(settings['spacing'])
                 elif first_lang == 'chinese':
-                    for _ in range(settings['first_repeat']):
-                        audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
-                        play_audio(audio_file)
-                        await asyncio.sleep(settings['spacing'])
+                    audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
+                    play_audio(audio_file)
+                    await asyncio.sleep(settings['spacing'])
 
                 # 두 번째 언어
                 second_lang = settings['second_lang']
                 if second_lang == 'korean':
-                    for _ in range(settings['second_repeat']):
-                        audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
-                        play_audio(audio_file)
-                        await asyncio.sleep(settings['spacing'])
+                    audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
+                    play_audio(audio_file)
+                    await asyncio.sleep(settings['spacing'])
                 elif second_lang == 'english':
-                    for _ in range(settings['second_repeat']):
-                        audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
-                        play_audio(audio_file)
-                        await asyncio.sleep(settings['spacing'])
+                    audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
+                    play_audio(audio_file)
+                    await asyncio.sleep(settings['spacing'])
                 elif second_lang == 'chinese':
-                    for _ in range(settings['second_repeat']):
-                        audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
-                        play_audio(audio_file)
-                        await asyncio.sleep(settings['spacing'])
+                    audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
+                    play_audio(audio_file)
+                    await asyncio.sleep(settings['spacing'])
 
                 # 세 번째 언어
                 third_lang = settings['third_lang']
                 if third_lang == 'korean':
-                    for _ in range(settings['third_repeat']):
-                        audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
-                        play_audio(audio_file)
-                        await asyncio.sleep(settings['spacing'])
+                    audio_file = await create_audio(kor, VOICE_MAPPING['korean'][settings['kor_voice']], settings['korean_speed'])
+                    play_audio(audio_file)
+                    await asyncio.sleep(settings['spacing'])
                 elif third_lang == 'english':
-                    for _ in range(settings['third_repeat']):
-                        audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
-                        play_audio(audio_file)
-                        await asyncio.sleep(settings['spacing'])
+                    audio_file = await create_audio(eng, VOICE_MAPPING['english'][settings['eng_voice']], settings['english_speed'])
+                    play_audio(audio_file)
+                    await asyncio.sleep(settings['spacing'])
                 elif third_lang == 'chinese':
-                    for _ in range(settings['third_repeat']):
-                        audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
-                        play_audio(audio_file)
-                        await asyncio.sleep(settings['spacing'])
+                    audio_file = await create_audio(chn, VOICE_MAPPING['chinese'][settings['zh_voice']], settings['chinese_speed'])
+                    play_audio(audio_file)
+                    await asyncio.sleep(settings['spacing'])
 
             except Exception as e:
-                st.error(f"음성 재생 중 오류 발생: {e}")
+                st.error(f"음성 재생 오류: {e}")
                 traceback.print_exc()
 
             # 다음 문장으로 넘어가기 전 대기
@@ -836,32 +727,36 @@ async def start_learning():
             sentence_count += 1
             if settings['break_enabled'] and sentence_count % settings['break_interval'] == 0:
                 try:
-                    # 1. 북소리 재생
-                    break_sound_path = SCRIPT_DIR / 'base/break.wav'
-                    if break_sound_path.exists():
-                        play_audio(str(break_sound_path))
-                        await asyncio.sleep(0.5)  # 북소리와 음성 안내 사이 간격
-                    
-                    # 2. Break Time 음성 안내 생성 및 재생
-                    break_msg = "5 second Break Time"
-                    break_voice = VOICE_MAPPING['english']['Jenny']  # Jenny 목소리 사용
-                    break_audio = await create_audio(break_msg, break_voice, 1.0)  # 기본 속도로 재생
-                    if break_audio:
-                        play_audio(break_audio)
-                    
-                    # 3. 브레이크 시간 대기
-                    await asyncio.sleep(settings['break_duration'])
+                    status.warning(f"🔄 {settings['break_interval']}문장 완료! {settings['break_duration']}초간 휴식...")
+                    play_break_sound()  # 브레이크 알림음 재생
+                    time.sleep(settings['break_duration'])  # 설정된 시간만큼 휴식
+                    status.empty()
                 except Exception as e:
                     st.error(f"브레이크 알림음 재생 오류: {e}")
                     traceback.print_exc()
 
-        # 자동 반복이 꺼져 있으면 루프 종료
-        if not auto_repeat:
-            break
-
-    st.success("학습이 완료되었습니다!")
-    st.session_state.page = 'settings'
-    st.rerun()
+        # 학습 완료 시
+        try:
+            # final.wav 재생
+            final_sound_path = SCRIPT_DIR / 'base/final.wav'
+            if final_sound_path.exists():
+                play_audio(str(final_sound_path))
+                await asyncio.sleep(1)  # 완료 사운드 재생 대기
+            
+            if auto_repeat:
+                # 자동 반복이 켜져 있으면 처음부터 다시 시작
+                sentence_count = 0
+                continue
+            else:
+                # 자동 반복이 꺼져 있으면 학습 종료
+                st.success("학습이 완료되었습니다!")
+                st.session_state.page = 'settings'
+                st.rerun()
+                break
+                
+        except Exception as e:
+            st.error(f"완료 알림음 재생 오류: {e}")
+            traceback.print_exc()
 
 def main():
     # 세션 상태 초기화
@@ -883,9 +778,16 @@ def main():
                 st.session_state.page = 'settings'
                 st.rerun()
         
+        # 학습 시작
         asyncio.run(start_learning())
-        # 학습이 끝나면 설정 페이지로 돌아가기
-        st.session_state.page = 'settings'
+
+def save_settings(settings):
+    """설정값을 파일에 저장"""
+    try:
+        with open(SETTINGS_PATH, 'w', encoding='utf-8') as f:
+            json.dump(settings, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        st.error(f"설정 저장 중 오류: {e}")
 
 if __name__ == "__main__":
     main()
