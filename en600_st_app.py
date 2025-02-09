@@ -510,7 +510,7 @@ def create_settings_ui():
     save_settings(settings)
 
 def play_audio(file_path):
-    """음성 파일 재생"""
+    """음성 파일 재생 및 임시 파일 삭제"""
     try:
         if not os.path.exists(file_path):
             st.error(f"파일이 존재하지 않음: {file_path}")
@@ -541,7 +541,10 @@ def play_audio(file_path):
     finally:
         # temp 폴더의 임시 파일만 삭제
         if os.path.exists(file_path) and TEMP_DIR in Path(file_path).parents:
-            os.remove(file_path)
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                st.error(f"임시 파일 삭제 중 오류: {e}")
 
 def play_break_sound():
     """브레이크 알림음 재생"""
