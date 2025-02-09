@@ -19,7 +19,7 @@ import base64
 
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
-SETTINGS_PATH = SCRIPT_DIR / '/base/settings.json'
+SETTINGS_PATH = SCRIPT_DIR / '/base/en600s-settings.json'
 EXCEL_PATH = SCRIPT_DIR / 'base/en600new.xlsx'
 TEMP_DIR = SCRIPT_DIR / 'temp'  # 임시 파일 저장 경로 추가
 
@@ -90,7 +90,7 @@ def initialize_session_state():
             'subtitle_delay': 0.5,
             'keep_subtitles': True,
             'break_enabled': True,
-            'break_interval': 20,
+            'break_interval': 10,
             'break_duration': 5,
             'next_sentence_time': 0.5,
             'english_font': 'Pretendard',
@@ -107,7 +107,8 @@ def initialize_session_state():
                 'second_lang': False,
                 'third_lang': False
             },
-            'auto_repeat': False,
+            'auto_repeat': True,
+            'auto_repeat_count': 5,  # 자동 반복 횟수 추가
         }
 
     # break.wav 파일 존재 여부 확인
@@ -123,9 +124,25 @@ def initialize_session_state():
 
 def create_settings_ui():
     """설정 화면 UI 생성"""
-    settings = st.session_state.settings  # settings 변수를 함수 시작 시 정의
+    # CSS 스타일 추가
+    st.markdown("""
+        <style>
+            /* 제목 (h1) 폰트 크기 조정 */
+            .st-emotion-cache-10trblm {
+                font-size: 1.5rem !important;
+                margin-bottom: 0px !important;
+            }
+            
+            /* 부제목 (h2) 폰트 크기 조정 */
+            .st-emotion-cache-1629p8f h2 {
+                font-size: 1.2rem !important;
+                margin-top: 1rem !important;
+                margin-bottom: 0.5rem !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
     
-    # 제목과 학습 시작 버튼을 같은 줄에 배치
+    settings = st.session_state.settings
     col1, col2 = st.columns([0.7, 0.3])
     with col1:
         st.title("대충영어")
@@ -325,6 +342,19 @@ def create_settings_ui():
         break_enabled = st.checkbox("🔄 브레이크",
                                   value=settings['break_enabled'],
                                   key="break_enabled")
+
+    # 자동 반복 설정 추가
+    col1, col2 = st.columns(2)
+    with col1:
+        settings['auto_repeat'] = st.checkbox("자동 반복", 
+                                            value=settings.get('auto_repeat', True),
+                                            key="auto_repeat_checkbox")
+    with col2:
+        settings['auto_repeat_count'] = st.number_input("반복 횟수",
+                                                      value=settings.get('auto_repeat_count', 5),
+                                                      min_value=1,
+                                                      max_value=100,
+                                                      key="auto_repeat_count_input")
 
     # 설정값 업데이트
     settings['hide_subtitles'] = {
@@ -581,6 +611,7 @@ async def start_learning():
     """학습 시작"""
     settings = st.session_state.settings
     sentence_count = 0
+    repeat_count = 0  # 반복 횟수 카운터 추가
     
     # 엑셀에서 문장 가져오기
     try:
@@ -871,22 +902,29 @@ async def start_learning():
 
         # 학습 완료 시
         try:
-            # final.wav 재생 - 자동 반복 여부와 관계없이 항상 재생
+            # final.wav 재생
             final_sound_path = SCRIPT_DIR / 'base/final.wav'
             if final_sound_path.exists():
                 play_audio(str(final_sound_path))
-                await asyncio.sleep(1)  # 완료 사운드 재생 대기
-            
-            if auto_repeat:
-                # 자동 반복이 켜져 있으면 처음부터 다시 시작
-                sentence_count = 0
-                continue
+                await asyncio.sleep(1)
+
+            if settings['auto_repeat']:
+                repeat_count += 1
+                if repeat_count < settings['auto_repeat_count']:
+                    # 설정된 반복 횟수에 도달하지 않았으면 다시 시작
+                    sentence_count = 0
+                    status.info(f"자동 반복 중... ({repeat_count}/{settings['auto_repeat_count']})")
+                    continue
+                else:
+                    # 설정된 반복 횟수에 도달하면 종료
+                    st.success(f"학습이 완료되었습니다! (총 {settings['auto_repeat_count']}회 반복)")
             else:
                 # 자동 반복이 꺼져 있으면 학습 종료
                 st.success("학습이 완료되었습니다!")
-                st.session_state.page = 'settings'
-                st.rerun()
-                break
+            
+            st.session_state.page = 'settings'
+            st.rerun()
+            break
                 
         except Exception as e:
             st.error(f"완료 알림음 재생 오류: {e}")
