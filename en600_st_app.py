@@ -54,6 +54,9 @@ LANG_DISPLAY = {'english': 'EN', 'korean': 'KO', 'chinese': 'CH', 'none': '없�
 
 def initialize_session_state():
     """세션 상태 초기화"""
+    if 'user_language' not in st.session_state:
+        st.session_state.user_language = 'korean'  # 기본값 설정
+
     # temp 폴더가 없으면 생성
     if not TEMP_DIR.exists():
         TEMP_DIR.mkdir(parents=True)
@@ -700,6 +703,22 @@ async def start_learning():
                                                      step=1,
                                                      key="third_repeat_learning")
 
+        # 자동 반복 설정
+        st.subheader("자동 반복 설정")
+        col1, col2 = st.columns(2)
+        with col1:
+            settings['auto_repeat'] = st.checkbox("자동 반복 활성화",
+                                                value=settings.get('auto_repeat', True),
+                                                key="auto_repeat_learning")
+        with col2:
+            settings['repeat_count'] = st.number_input("반복 횟수",
+                                                     value=settings.get('repeat_count', 5),
+                                                     min_value=1,
+                                                     max_value=100,
+                                                     step=1,
+                                                     key="repeat_count_learning",
+                                                     disabled=not settings['auto_repeat'])
+
         # 음성 설정
         st.subheader("음성 설정")
         col1, col2, col3 = st.columns(3)
@@ -924,6 +943,30 @@ async def start_learning():
             st.error(f"완료 알림음 재생 오류: {e}")
             traceback.print_exc()
 
+def create_personalized_ui():
+    """개인별 맞춤 UI 생성"""
+    st.title("개인별 설정 기억하기")
+
+    # 언어 선택
+    selected_language = st.selectbox(
+        "사용할 언어를 선택하세요",
+        options=['korean', 'english', 'chinese'],
+        index=['korean', 'english', 'chinese'].index(st.session_state.user_language)
+    )
+
+    # 선택한 언어를 세션 상태에 저장
+    if selected_language != st.session_state.user_language:
+        st.session_state.user_language = selected_language
+        st.rerun()  # 변경된 언어를 반영하기 위해 페이지 새로고침
+
+    # 선택한 언어에 따라 메시지 표시
+    if st.session_state.user_language == 'korean':
+        st.write("안녕하세요! 한국어로 표시됩니다.")
+    elif st.session_state.user_language == 'english':
+        st.write("Hello! This is displayed in English.")
+    elif st.session_state.user_language == 'chinese':
+        st.write("你好！这是用中文显示的。")
+
 def main():
     # 세션 상태 초기화
     initialize_session_state()
@@ -946,6 +989,9 @@ def main():
         
         # 학습 시작
         asyncio.run(start_learning())
+    elif st.session_state.page == 'personalized':
+        # 개인별 맞춤 UI 생성
+        create_personalized_ui()
 
 def save_settings(settings):
     """설정값을 파일에 저장"""
