@@ -108,7 +108,7 @@ def initialize_session_state():
                 'third_lang': False
             },
             'auto_repeat': True,
-            'auto_repeat_count': 5,  # 자동 반복 횟수 추가
+            'repeat_count': 5,  # 기본 반복 횟수 추가
         }
 
     # break.wav 파일 존재 여부 확인
@@ -343,19 +343,6 @@ def create_settings_ui():
                                   value=settings['break_enabled'],
                                   key="break_enabled")
 
-    # 자동 반복 설정 추가
-    col1, col2 = st.columns(2)
-    with col1:
-        settings['auto_repeat'] = st.checkbox("자동 반복", 
-                                            value=settings.get('auto_repeat', True),
-                                            key="auto_repeat_checkbox")
-    with col2:
-        settings['auto_repeat_count'] = st.number_input("반복 횟수",
-                                                      value=settings.get('auto_repeat_count', 5),
-                                                      min_value=1,
-                                                      max_value=100,
-                                                      key="auto_repeat_count_input")
-
     # 설정값 업데이트
     settings['hide_subtitles'] = {
         'first_lang': hide_first,
@@ -459,7 +446,23 @@ def create_settings_ui():
         </style>
     """, unsafe_allow_html=True)
 
-    # 설정값 업데이트 - 모든 설정값을 한 번에 업데이트
+    # 자동 반복 설정 섹션 추가
+    st.subheader("자동 반복 설정")
+    col1, col2 = st.columns(2)
+    with col1:
+        settings['auto_repeat'] = st.checkbox("자동 반복 활성화", 
+                                            value=settings.get('auto_repeat', True),
+                                            key="auto_repeat_checkbox")
+    with col2:
+        settings['repeat_count'] = st.number_input("반복 횟수",
+                                                 value=settings.get('repeat_count', 5),
+                                                 min_value=1,
+                                                 max_value=100,
+                                                 step=1,
+                                                 key="repeat_count_input",
+                                                 disabled=not settings['auto_repeat'])
+
+    # 설정값 업데이트
     settings.update({
         'first_lang': settings['first_lang'],
         'second_lang': settings['second_lang'],
@@ -611,7 +614,7 @@ async def start_learning():
     """학습 시작"""
     settings = st.session_state.settings
     sentence_count = 0
-    repeat_count = 0  # 반복 횟수 카운터 추가
+    repeat_count = 0  # 현재 반복 횟수
     
     # 엑셀에서 문장 가져오기
     try:
@@ -634,20 +637,19 @@ async def start_learning():
     status = st.empty()
     
     # 상단 컨트롤 패널
-    col1, col2, col3, col4 = st.columns([0.25, 0.25, 0.25, 0.25])
+    col1, col2 = st.columns([0.5, 0.5])  # 2개 컬럼으로 변경
     with col1:
-        if st.button("일시정지", use_container_width=True, key="pause_btn"):
+        if st.button("⏸️ 일시정지", use_container_width=True, key="pause_btn"):
             st.warning("일시정지 중입니다. 계속하려면 '재개' 버튼을 누르세요.")
-            if st.button("재개", use_container_width=True, key="resume_btn"):
+            if st.button("▶️ 재개", use_container_width=True, key="resume_btn"):
                 st.rerun()
     with col2:
-        if st.button("학습 종료", use_container_width=True, key="stop_btn"):
+        if st.button("⏹️ 학습 종료", use_container_width=True, key="stop_btn"):
             st.session_state.page = 'settings'
             st.rerun()
-    with col3:
-        auto_repeat = st.checkbox("자동 반복", value=settings.get('auto_repeat', True), key="auto_repeat_checkbox")
-    with col4:
-        hide_all = st.checkbox("전체 자막 숨기기", value=False, key="hide_all_checkbox")
+
+    # 자동 반복 체크박스는 별도의 행으로 이동
+    auto_repeat = st.checkbox("자동 반복", value=settings.get('auto_repeat', True), key="auto_repeat_checkbox")
 
     # 실시간 설정 변경 UI
     with st.expander("학습 설정 조정", expanded=False):
@@ -786,31 +788,21 @@ async def start_learning():
             )
 
             # 자막 표시
-            if not hide_all:
-                texts = {'english': eng, 'korean': kor, 'chinese': chn}
-                colors = {
-                    'english': settings['english_color'],
-                    'korean': settings['korean_color'],
-                    'chinese': settings['chinese_color']
-                }
-                fonts = {
-                    'english': settings['english_font'],
-                    'korean': settings['korean_font'],
-                    'chinese': settings['chinese_font']
-                }
-                
-                # 순위에 따라 자막 표시
-                langs = [settings['first_lang'], settings['second_lang'], settings['third_lang']]
-                for idx, lang in enumerate(langs):
-                    # 해당 순위의 자막이 숨김 상태가 아닐 때만 표시
-                    if not settings['hide_subtitles'][f"{['first', 'second', 'third'][idx]}_lang"]:
-                        subtitles[idx].markdown(
-                            f'<p style="font-family: {fonts[lang]}; color: {colors[lang]}; font-size: {settings[f"{lang}_font_size"]}px;">{texts[lang]}</p>',
-                            unsafe_allow_html=True
-                        )
-                    else:
-                        # 자막이 숨김 상태일 때는 빈 공간 표시
-                        subtitles[idx].markdown("<p>&nbsp;</p>", unsafe_allow_html=True)
+            if not settings['hide_subtitles']['first_lang']:
+                subtitles[0].markdown(
+                    f'<p style="font-family: {settings["korean_font"]}; color: {settings["korean_color"]}; font-size: {settings["korean_font_size"]}px;">{kor}</p>',
+                    unsafe_allow_html=True
+                )
+            if not settings['hide_subtitles']['second_lang']:
+                subtitles[1].markdown(
+                    f'<p style="font-family: {settings["english_font"]}; color: {settings["english_color"]}; font-size: {settings["english_font_size"]}px;">{eng}</p>',
+                    unsafe_allow_html=True
+                )
+            if not settings['hide_subtitles']['third_lang']:
+                subtitles[2].markdown(
+                    f'<p style="font-family: {settings["chinese_font"]}; color: {settings["chinese_color"]}; font-size: {settings["chinese_font_size"]}px;">{chn}</p>',
+                    unsafe_allow_html=True
+                )
 
             # 음성 재생
             try:
@@ -907,24 +899,26 @@ async def start_learning():
             if final_sound_path.exists():
                 play_audio(str(final_sound_path))
                 await asyncio.sleep(1)
-
+            
             if settings['auto_repeat']:
                 repeat_count += 1
-                if repeat_count < settings['auto_repeat_count']:
-                    # 설정된 반복 횟수에 도달하지 않았으면 다시 시작
+                if repeat_count < settings['repeat_count']:
+                    # 반복 횟수가 남았으면 처음부터 다시 시작
                     sentence_count = 0
-                    status.info(f"자동 반복 중... ({repeat_count}/{settings['auto_repeat_count']})")
+                    status.info(f"반복 중... ({repeat_count}/{settings['repeat_count']})")
                     continue
                 else:
-                    # 설정된 반복 횟수에 도달하면 종료
-                    st.success(f"학습이 완료되었습니다! (총 {settings['auto_repeat_count']}회 반복)")
+                    # 반복 횟수를 모두 채우면 학습 종료
+                    st.success(f"학습이 완료되었습니다! (총 {settings['repeat_count']}회 반복)")
+                    st.session_state.page = 'settings'
+                    st.rerun()
+                    break
             else:
                 # 자동 반복이 꺼져 있으면 학습 종료
                 st.success("학습이 완료되었습니다!")
-            
-            st.session_state.page = 'settings'
-            st.rerun()
-            break
+                st.session_state.page = 'settings'
+                st.rerun()
+                break
                 
         except Exception as e:
             st.error(f"완료 알림음 재생 오류: {e}")
