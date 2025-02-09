@@ -19,9 +19,13 @@ import base64
 
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
-SETTINGS_PATH = SCRIPT_DIR / '/base/en600s-settings.json'
+SETTINGS_PATH = SCRIPT_DIR / 'base/en600s-settings.json'
 EXCEL_PATH = SCRIPT_DIR / 'base/en600new.xlsx'
 TEMP_DIR = SCRIPT_DIR / 'temp'  # 임시 파일 저장 경로 추가
+
+# base 폴더가 없으면 생성
+if not (SCRIPT_DIR / 'base').exists():
+    (SCRIPT_DIR / 'base').mkdir(parents=True)
 
 # 음성 매핑 설정
 VOICE_MAPPING = {
