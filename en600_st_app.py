@@ -685,7 +685,7 @@ def create_settings_ui():
         'japanese_font': settings['japanese_font'],
         'japanese_font_size': settings['japanese_font_size'],
         'japanese_color': settings['japanese_color'],
-        'japanese_speed': settings.get('japanese_speed', 2.0),  # 일본어 속도 추가
+        'japanese_speed': settings['japanese_speed'],
         'english_speed': settings['english_speed'],
         'korean_speed': settings['korean_speed'],
         'chinese_speed': settings['chinese_speed'],
