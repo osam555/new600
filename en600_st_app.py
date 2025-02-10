@@ -656,10 +656,10 @@ def create_settings_ui():
         'japanese_font': settings['japanese_font'],
         'japanese_font_size': settings['japanese_font_size'],
         'japanese_color': settings['japanese_color'],
-    })
-
-    # 설정값 업데이트
-    settings.update({
+        'japanese_speed': settings.get('japanese_speed', 2.0),  # 일본어 속도 추가
+        'english_speed': settings['english_speed'],
+        'korean_speed': settings['korean_speed'],
+        'chinese_speed': settings['chinese_speed'],
         'start_row': settings['start_row'],
         'end_row': settings['end_row']
     })
@@ -978,8 +978,8 @@ async def start_learning():
                 'chinese': {'text': chn, 'voice': VOICE_MAPPING['chinese'][settings['zh_voice']], 'speed': settings['chinese_speed']},
                 'japanese': {
                     'text': jpn, 
-                    'voice': VOICE_MAPPING['japanese'][settings['jp_voice']], 
-                    'speed': settings['japanese_speed']
+                    'voice': VOICE_MAPPING['japanese'][settings.get('jp_voice', 'Nanami')], 
+                    'speed': settings.get('japanese_speed', 2.0)  # 기본값 설정
                 }
             }
 
