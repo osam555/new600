@@ -190,7 +190,7 @@ def initialize_session_state():
             'english_color': '#00FF00',  # 다크모드: 초록색, 브라이트모드: 검정색
             'korean_color': '#00FF00',   # 다크모드: 초록색, 브라이트모드: 검정색
             'chinese_color': '#00FF00',  # 다크모드: 초록색, 브라이트모드: 검정색
-            'japanese_speed': 2.0,  # 일본어 배속 기본값 추가
+            'japanese_speed': 2.0,  # 일본어 속도 기본값 추가
         }
 
     # break.wav 파일 존재 여부 확인
@@ -1028,7 +1028,7 @@ async def start_learning():
                 'japanese': {
                     'text': jpn, 
                     'voice': VOICE_MAPPING['japanese'][settings['jp_voice']], 
-                    'speed': settings['japanese_speed']
+                    'speed': settings.get('japanese_speed', 2.0)  # 안전하게 값 가져오기
                 }
             }
 
