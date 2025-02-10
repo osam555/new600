@@ -541,16 +541,20 @@ def create_settings_ui():
         col4_1, col4_2 = st.columns([0.7, 0.3])
         with col4_1:
             settings['japanese_font'] = st.selectbox("일본어 폰트",
-                                                  options=['PretendardJP-Light', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'MS Gothic'],
-                                                  index=['PretendardJP-Light', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'MS Gothic'].index(settings['japanese_font']),
-                                                  key="japanese_font_learning")
+                options=['PretendardJP-Light', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'MS Gothic'],
+                index=['PretendardJP-Light', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'MS Gothic'].index(
+                    settings.get('japanese_font', 'PretendardJP-Light')  # 기본값 설정
+                ),
+                key="japanese_font_learning"
+            )
         with col4_2:
             settings['japanese_font_size'] = st.number_input("크기",
-                                                        value=settings['japanese_font_size'],
-                                                        min_value=10,
-                                                        max_value=50,
-                                                        step=1,
-                                                        key="japanese_font_size_learning")
+                value=settings.get('japanese_font_size', 28),  # 기본값 설정
+                min_value=10,
+                max_value=50,
+                step=1,
+                key="japanese_font_size_learning"
+            )
 
     # 색상 설정 수정
     st.subheader("색상 설정")
@@ -978,8 +982,8 @@ async def start_learning():
                 'chinese': {'text': chn, 'voice': VOICE_MAPPING['chinese'][settings['zh_voice']], 'speed': settings['chinese_speed']},
                 'japanese': {
                     'text': jpn, 
-                    'voice': VOICE_MAPPING['japanese'][settings.get('jp_voice', 'Nanami')], 
-                    'speed': settings.get('japanese_speed', 2.0)  # 기본값 설정
+                    'voice': VOICE_MAPPING['japanese'][settings['jp_voice']], 
+                    'speed': settings['japanese_speed']
                 }
             }
 
