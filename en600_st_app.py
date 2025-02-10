@@ -306,6 +306,31 @@ def create_settings_ui():
         </style>
     """, unsafe_allow_html=True)
     
+    # CSS 스타일 추가 (서브헤더 초록색)
+    st.markdown("""
+        <style>
+            /* 서브헤더 스타일 */
+            .st-emotion-cache-1629p8f h2 {
+                color: #00FF00 !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # 특정 서브헤더에만 초록색 적용
+    st.markdown("""
+        <style>
+            /* 자막 | 음성 | 속도 서브헤더 */
+            .st-emotion-cache-1629p8f h2:contains('자막 | 음성 | 속도') {
+                color: #00FF00 !important;
+            }
+            
+            /* 자막 색상 설정 서브헤더 */
+            .st-emotion-cache-1629p8f h2:contains('자막 색깔') {
+                color: #00FF00 !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    
     settings = st.session_state.settings
     col1, col2 = st.columns([0.7, 0.3])
     with col1:
@@ -362,7 +387,7 @@ def create_settings_ui():
                                             key="end_row_input",
                                             format="%d")
     with col3:
-        settings['repeat_count'] = st.selectbox("반복 횟수",
+        settings['repeat_count'] = st.selectbox("전체 자동반복",
                                              options=['없음', '1', '2', '3', '4', '5'],
                                              index=0 if not settings.get('auto_repeat', True) else settings.get('repeat_count', 5),
                                              key="repeat_count_input")
@@ -458,7 +483,7 @@ def create_settings_ui():
                                            format="%.1f",
                                            key="next_sentence_time")
     with col4:
-        settings['break_interval'] = st.selectbox("브레이크 문장 갯수",
+        settings['break_interval'] = st.selectbox("중간휴식 문장 갯수",
                                               options=['없음', '5', '10', '15', '20'],
                                               index=0 if not settings.get('break_enabled', True) else 
                                                     ['없음', '5', '10', '15', '20'].index(str(settings.get('break_interval', 10))),
@@ -557,7 +582,7 @@ def create_settings_ui():
             )
 
     # 색상 설정 수정
-    st.subheader("색상 설정")
+    st.subheader("자막 색상 설정")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         default_color = 'green'  # 기본값을 초록색으로 변경
@@ -678,6 +703,29 @@ def create_settings_ui():
             font-family: 'PretendardJP-Light';
             src: url('{str(SCRIPT_DIR / "base/PretendardJP-Light.otf")}') format('opentype');
         }}
+        </style>
+    """, unsafe_allow_html=True)
+
+    # 학습 화면 폰트 크기 조정 (특정 요소만)
+    st.markdown("""
+        <style>
+            /* 학습종료 버튼 폰트 크기 및 박스 크기 */
+            div[data-testid="stButton"] button:contains('학습 종료') {
+                font-size: 12px !important;
+                padding: 4px 8px !important;
+                height: 28px !important;
+            }
+            
+            /* 학습설정 폰트 크기 */
+            .st-emotion-cache-1629p8f h2:contains('학습 설정') {
+                font-size: 12px !important;
+                margin-bottom: 0.5rem !important;
+            }
+            
+            /* 학습설정 박스 크기 */
+            .st-emotion-cache-1y4p8pa {
+                padding: 0.5rem !important;
+            }
         </style>
     """, unsafe_allow_html=True)
 
@@ -821,16 +869,13 @@ async def start_learning():
     status = st.empty()
     
     # 상단 컨트롤 패널
-    col1, col2 = st.columns([0.5, 0.5])  # 2개 컬럼으로 변경
+    col1, col2 = st.columns([0.5, 0.5])
     with col1:
-        if st.button("⏸️ 일시정지", use_container_width=True, key="pause_btn"):
-            st.warning("일시정지 중입니다. 계속하려면 '재개' 버튼을 누르세요.")
-            if st.button("▶️ 재개", use_container_width=True, key="resume_btn"):
-                st.rerun()
-    with col2:
         if st.button("⏹️ 학습 종료", use_container_width=True, key="stop_btn"):
             st.session_state.page = 'settings'
             st.rerun()
+    with col2:
+        st.empty()  # 일시정지 버튼이 있던 자리를 빈 공간으로 대체
 
     # 실시간 설정 변경 UI
     with st.expander("학습 설정", expanded=False):
@@ -1161,6 +1206,29 @@ async def start_learning():
         except Exception as e:
             st.error(f"완료 알림음 재생 오류: {e}")
             traceback.print_exc()
+
+    # 학습 화면 폰트 크기 조정 (특정 요소만)
+    st.markdown("""
+        <style>
+            /* 학습종료 버튼 폰트 크기 및 박스 크기 */
+            div[data-testid="stButton"] button:contains('학습 종료') {
+                font-size: 12px !important;
+                padding: 4px 8px !important;
+                height: 28px !important;
+            }
+            
+            /* 학습설정 폰트 크기 */
+            .st-emotion-cache-1629p8f h2:contains('학습 설정') {
+                font-size: 12px !important;
+                margin-bottom: 0.5rem !important;
+            }
+            
+            /* 학습설정 박스 크기 */
+            .st-emotion-cache-1y4p8pa {
+                padding: 0.5rem !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
 
 def create_personalized_ui():
     """개인별 맞춤 UI 생성"""
