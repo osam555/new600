@@ -411,7 +411,7 @@ def create_settings_ui():
                                      format="%d")
         speed_key = f"{settings['first_lang']}_speed"
         first_speed = st.number_input("음성 속도(배)",
-                                    value=settings[speed_key],
+                                    value=settings.get(speed_key, 1.0),  # 기본값 1.0
                                     min_value=0.1,
                                     step=0.1,
                                     format="%.1f",
@@ -431,7 +431,7 @@ def create_settings_ui():
                                       format="%d")
         speed_key = f"{settings['second_lang']}_speed"
         second_speed = st.number_input("음성 속도(배)",
-                                     value=settings[speed_key],
+                                     value=settings.get(speed_key, 1.0),  # 기본값 1.0
                                      min_value=0.1,
                                      step=0.1,
                                      format="%.1f",
@@ -451,7 +451,7 @@ def create_settings_ui():
                                      format="%d")
         speed_key = f"{settings['third_lang']}_speed"
         third_speed = st.number_input("음성 속도(배)",
-                                    value=settings[speed_key],
+                                    value=settings.get(speed_key, 1.0),  # 기본값 1.0
                                     min_value=0.1,
                                     step=0.1,
                                     format="%.1f",
