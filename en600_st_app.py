@@ -138,7 +138,7 @@ def initialize_session_state():
                             'english_color': '#000000',   # 검정색
                             'korean_color': '#000000',    # 검정색
                             'chinese_color': '#000000',   # 검정색
-                            'japanese_color': '#000000' if is_dark_mode else '#FFFFFF',
+                            'japanese_color': '#FFFFFF',
                         })
                     st.session_state.settings = saved_settings
                     return
@@ -976,7 +976,11 @@ async def start_learning():
                 'korean': {'text': kor, 'voice': VOICE_MAPPING['korean'][settings['kor_voice']], 'speed': settings['korean_speed']},
                 'english': {'text': eng, 'voice': VOICE_MAPPING['english'][settings['eng_voice']], 'speed': settings['english_speed']},
                 'chinese': {'text': chn, 'voice': VOICE_MAPPING['chinese'][settings['zh_voice']], 'speed': settings['chinese_speed']},
-                'japanese': {'text': jpn, 'voice': VOICE_MAPPING['japanese'][settings.get('jp_voice', 'Nanami')], 'speed': settings.get('japanese_speed', 2.0)}
+                'japanese': {
+                    'text': jpn, 
+                    'voice': VOICE_MAPPING['japanese'][settings['jp_voice']], 
+                    'speed': settings['japanese_speed']
+                }
             }
 
             progress.progress((i + 1) / total_sentences)
