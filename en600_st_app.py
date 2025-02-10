@@ -156,7 +156,7 @@ def initialize_session_state():
             'kor_voice': '선희',
             'eng_voice': 'Steffan',
             'zh_voice': 'Yunjian',
-            'jp_voice': 'Daichi',
+            'jp_voice': 'Nanami',
             'start_row': 301,
             'end_row': 350,
             'word_delay': 0.5,
@@ -668,13 +668,13 @@ def create_settings_ui():
     save_settings(settings)
 
     # CSS에 일본어 폰트 추가
-    st.markdown("""
-    <style>
-    @font-face {
-        font-family: 'PretendardJP-Light';
-        src: url('base/PretendardJP-Light.otf') format('opentype');
-    }
-    </style>
+    st.markdown(f"""
+        <style>
+        @font-face {{
+            font-family: 'PretendardJP-Light';
+            src: url('{str(SCRIPT_DIR / "base/PretendardJP-Light.otf")}') format('opentype');
+        }}
+        </style>
     """, unsafe_allow_html=True)
 
 def play_audio(file_path):
@@ -976,7 +976,7 @@ async def start_learning():
                 'korean': {'text': kor, 'voice': VOICE_MAPPING['korean'][settings['kor_voice']], 'speed': settings['korean_speed']},
                 'english': {'text': eng, 'voice': VOICE_MAPPING['english'][settings['eng_voice']], 'speed': settings['english_speed']},
                 'chinese': {'text': chn, 'voice': VOICE_MAPPING['chinese'][settings['zh_voice']], 'speed': settings['chinese_speed']},
-                'japanese': {'text': jpn, 'voice': VOICE_MAPPING['japanese'][settings['jp_voice']], 'speed': settings['japanese_speed']}
+                'japanese': {'text': jpn, 'voice': VOICE_MAPPING['japanese'][settings.get('jp_voice', 'Nanami')], 'speed': settings.get('japanese_speed', 2.0)}
             }
 
             progress.progress((i + 1) / total_sentences)
