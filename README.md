@@ -12,7 +12,7 @@
 
 ## 설치 방법
 
-1. Python 3.8 이상 설치
+1. Python 3.11.1 이상 설치
 2. 필요한 패키지 설치:
    ```bash
    pip install -r requirements.txt
