@@ -1153,7 +1153,7 @@ async def start_learning():
                         await asyncio.sleep(1)  # 알림음이 완전히 재생될 때까지 대기
                     
                     # 2. 브레이크 음성 메시지 생성 및 재생
-                    break_msg = "쉬는 시간입니다, 5초간의 휴식을 느껴보세요"
+                    break_msg = "쉬는 시간입니다, 5초간의 호흡을 느껴보세요"
                     break_audio = await create_audio(break_msg, VOICE_MAPPING['korean']['선희'], 1.0)
                     if break_audio:
                         play_audio(break_audio)
