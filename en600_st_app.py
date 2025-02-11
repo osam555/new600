@@ -833,10 +833,13 @@ async def start_learning():
         col1, col2, col3 = st.columns(3)
         with col1:
             repeat_options = ['없음', '1', '2', '3', '4', '5']
+            current_repeat = str(settings.get('repeat_count', '3'))
+            if current_repeat not in repeat_options:
+                current_repeat = '3'  # 기본값
             settings['repeat_count'] = st.selectbox(
                 "자동 반복(횟수)",
                 options=repeat_options,
-                index=repeat_options.index('3'),  # 기본값 3회
+                index=repeat_options.index(current_repeat),
                 key="repeat_count_learning"
             )
             settings['auto_repeat'] = settings['repeat_count'] != '없음'
@@ -845,10 +848,13 @@ async def start_learning():
                 
         with col2:
             break_options = ['없음', '5', '10', '15', '20']
+            current_break = str(settings.get('break_interval', '10'))
+            if current_break not in break_options:
+                current_break = '10'  # 기본값
             settings['break_interval'] = st.selectbox(
                 "휴식 간격(문장)",
                 options=break_options,
-                index=break_options.index('10'),  # 기본값 10회
+                index=break_options.index(current_break),
                 key="break_interval_learning"
             )
             settings['break_enabled'] = settings['break_interval'] != '없음'
@@ -858,10 +864,15 @@ async def start_learning():
         with col3:
             final_sound_options = ['없음', '30초', '1분', '1분30초']
             final_sound_mapping = {'없음': 0, '30초': 30, '1분': 60, '1분30초': 90}
+            current_duration = '1분'  # 기본값
+            for option, duration in final_sound_mapping.items():
+                if duration == settings.get('final_sound_duration', 60):
+                    current_duration = option
+                    break
             selected_duration = st.selectbox(
                 "종료후 음악듣기",
                 options=final_sound_options,
-                index=final_sound_options.index('1분'),  # 기본값 1분
+                index=final_sound_options.index(current_duration),
                 key="final_sound_duration_learning"
             )
             settings['final_sound_enabled'] = selected_duration != '없음'
