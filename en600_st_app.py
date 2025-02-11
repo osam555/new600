@@ -190,7 +190,7 @@ def initialize_session_state():
             'english_color': '#00FF00',  # 다크모드: 초록색, 브라이트모드: 검정색
             'korean_color': '#00FF00',   # 다크모드: 초록색, 브라이트모드: 검정색
             'chinese_color': '#00FF00',  # 다크모드: 초록색, 브라이트모드: 검정색
-            'japanese_speed': 2.0,  # 일본어 속도 기본값 추가
+            'japanese_speed': 2.0,  # 일본어 배속 기본값 추가
         }
 
     # break.wav 파일 존재 여부 확인
@@ -306,31 +306,6 @@ def create_settings_ui():
         </style>
     """, unsafe_allow_html=True)
     
-    # CSS 스타일 추가 (서브헤더 초록색)
-    st.markdown("""
-        <style>
-            /* 서브헤더 스타일 */
-            .st-emotion-cache-1629p8f h2 {
-                color: #00FF00 !important;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-    
-    # 특정 서브헤더에만 초록색 적용
-    st.markdown("""
-        <style>
-            /* 자막 | 음성 | 속도 서브헤더 */
-            .st-emotion-cache-1629p8f h2:contains('자막 | 음성 | 속도') {
-                color: #00FF00 !important;
-            }
-            
-            /* 자막 색상 설정 서브헤더 */
-            .st-emotion-cache-1629p8f h2:contains('자막 색깔') {
-                color: #00FF00 !important;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-    
     settings = st.session_state.settings
     col1, col2 = st.columns([0.7, 0.3])
     with col1:
@@ -387,7 +362,7 @@ def create_settings_ui():
                                             key="end_row_input",
                                             format="%d")
     with col3:
-        settings['repeat_count'] = st.selectbox("전체 자동반복",
+        settings['repeat_count'] = st.selectbox("반복 횟수",
                                              options=['없음', '1', '2', '3', '4', '5'],
                                              index=0 if not settings.get('auto_repeat', True) else settings.get('repeat_count', 5),
                                              key="repeat_count_input")
@@ -411,7 +386,7 @@ def create_settings_ui():
                                      format="%d")
         speed_key = f"{settings['first_lang']}_speed"
         first_speed = st.number_input("음성 속도(배)",
-                                    value=settings.get(speed_key, 1.0),  # 기본값 1.0
+                                    value=settings[speed_key],
                                     min_value=0.1,
                                     step=0.1,
                                     format="%.1f",
@@ -431,7 +406,7 @@ def create_settings_ui():
                                       format="%d")
         speed_key = f"{settings['second_lang']}_speed"
         second_speed = st.number_input("음성 속도(배)",
-                                     value=settings.get(speed_key, 1.0),  # 기본값 1.0
+                                     value=settings[speed_key],
                                      min_value=0.1,
                                      step=0.1,
                                      format="%.1f",
@@ -451,7 +426,7 @@ def create_settings_ui():
                                      format="%d")
         speed_key = f"{settings['third_lang']}_speed"
         third_speed = st.number_input("음성 속도(배)",
-                                    value=settings.get(speed_key, 1.0),  # 기본값 1.0
+                                    value=settings[speed_key],
                                     min_value=0.1,
                                     step=0.1,
                                     format="%.1f",
@@ -483,7 +458,7 @@ def create_settings_ui():
                                            format="%.1f",
                                            key="next_sentence_time")
     with col4:
-        settings['break_interval'] = st.selectbox("중간휴식 문장 갯수",
+        settings['break_interval'] = st.selectbox("브레이크 문장",
                                               options=['없음', '5', '10', '15', '20'],
                                               index=0 if not settings.get('break_enabled', True) else 
                                                     ['없음', '5', '10', '15', '20'].index(str(settings.get('break_interval', 10))),
@@ -582,7 +557,7 @@ def create_settings_ui():
             )
 
     # 색상 설정 수정
-    st.subheader("자막 색상 설정")
+    st.subheader("폰트 색상")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         default_color = 'green'  # 기본값을 초록색으로 변경
@@ -685,7 +660,7 @@ def create_settings_ui():
         'japanese_font': settings['japanese_font'],
         'japanese_font_size': settings['japanese_font_size'],
         'japanese_color': settings['japanese_color'],
-        'japanese_speed': settings['japanese_speed'],
+        'japanese_speed': settings.get('japanese_speed', 2.0),  # 일본어 속도 추가
         'english_speed': settings['english_speed'],
         'korean_speed': settings['korean_speed'],
         'chinese_speed': settings['chinese_speed'],
@@ -703,29 +678,6 @@ def create_settings_ui():
             font-family: 'PretendardJP-Light';
             src: url('{str(SCRIPT_DIR / "base/PretendardJP-Light.otf")}') format('opentype');
         }}
-        </style>
-    """, unsafe_allow_html=True)
-
-    # 학습 화면 폰트 크기 조정 (특정 요소만)
-    st.markdown("""
-        <style>
-            /* 학습종료 버튼 폰트 크기 및 박스 크기 */
-            div[data-testid="stButton"] button:contains('학습 종료') {
-                font-size: 12px !important;
-                padding: 4px 8px !important;
-                height: 28px !important;
-            }
-            
-            /* 학습설정 폰트 크기 */
-            .st-emotion-cache-1629p8f h2:contains('학습 설정') {
-                font-size: 12px !important;
-                margin-bottom: 0.5rem !important;
-            }
-            
-            /* 학습설정 박스 크기 */
-            .st-emotion-cache-1y4p8pa {
-                padding: 0.5rem !important;
-            }
         </style>
     """, unsafe_allow_html=True)
 
@@ -868,149 +820,54 @@ async def start_learning():
     progress = st.progress(0)
     status = st.empty()
     
-    # 상단 컨트롤 패널
-    col1, col2 = st.columns([0.5, 0.5])
-    with col1:
+    # 상단 컨트롤 패널 - 학습 시작 버튼과 동일한 레이아웃 사용
+    col1, col2 = st.columns([0.7, 0.3])
+    with col2:  # 오른쪽 30% 영역에 버튼 배치
         if st.button("⏹️ 학습 종료", use_container_width=True, key="stop_btn"):
             st.session_state.page = 'settings'
             st.rerun()
-    with col2:
-        st.empty()  # 일시정지 버튼이 있던 자리를 빈 공간으로 대체
 
     # 실시간 설정 변경 UI
     with st.expander("학습 설정", expanded=False):
-        # 제일 윗줄에 자동 반복, 브레이크, 파이널 음성 재생 옵션 추가
+        # 3가지 핵심 설정만 유지
         col1, col2, col3 = st.columns(3)
         with col1:
-            settings['auto_repeat'] = st.checkbox("자동 반복 활성화",
-                                                value=settings.get('auto_repeat', True),
-                                                key="auto_repeat_learning")
-            settings['repeat_count'] = st.number_input("자동 반복 회수",
-                                                     value=settings.get('repeat_count', 5),
-                                                     min_value=1,
-                                                     max_value=100,
-                                                     step=1,
-                                                     key="repeat_count_learning",
-                                                     disabled=not settings['auto_repeat'])
+            repeat_options = ['없음', '1', '2', '3', '4', '5']
+            settings['repeat_count'] = st.selectbox(
+                "자동 반복(횟수)",
+                options=repeat_options,
+                index=repeat_options.index('3'),  # 기본값 3회
+                key="repeat_count_learning"
+            )
+            settings['auto_repeat'] = settings['repeat_count'] != '없음'
+            if settings['auto_repeat']:
+                settings['repeat_count'] = int(settings['repeat_count'])
+                
         with col2:
-            settings['break_enabled'] = st.checkbox("브레이크 활성화",
-                                                  value=settings.get('break_enabled', True),
-                                                  key="break_enabled_learning")
-            settings['break_interval'] = st.number_input("브레이크 회수",
-                                                       value=settings.get('break_interval', 10),
-                                                       min_value=1,
-                                                       max_value=100,
-                                                       step=1,
-                                                       key="break_interval_learning",
-                                                       disabled=not settings['break_enabled'])
+            break_options = ['없음', '5', '10', '15', '20']
+            settings['break_interval'] = st.selectbox(
+                "휴식 간격(문장)",
+                options=break_options,
+                index=break_options.index('10'),  # 기본값 10회
+                key="break_interval_learning"
+            )
+            settings['break_enabled'] = settings['break_interval'] != '없음'
+            if settings['break_enabled']:
+                settings['break_interval'] = int(settings['break_interval'])
+                
         with col3:
-            settings['final_sound_enabled'] = st.checkbox("학습 완료 음성 재생",
-                                                        value=settings.get('final_sound_enabled', True),
-                                                        key="final_sound_enabled_learning")
-            settings['final_sound_duration'] = st.number_input("재생 시간 (초)",
-                                                             value=settings.get('final_sound_duration', 30),
-                                                             min_value=1,
-                                                             max_value=300,
-                                                             step=1,
-                                                             key="final_sound_duration_learning",
-                                                             disabled=not settings['final_sound_enabled'])
+            final_sound_options = ['없음', '30초', '1분', '1분30초']
+            final_sound_mapping = {'없음': 0, '30초': 30, '1분': 60, '1분30초': 90}
+            selected_duration = st.selectbox(
+                "종료후 음악듣기",
+                options=final_sound_options,
+                index=final_sound_options.index('1분'),  # 기본값 1분
+                key="final_sound_duration_learning"
+            )
+            settings['final_sound_enabled'] = selected_duration != '없음'
+            settings['final_sound_duration'] = final_sound_mapping[selected_duration]
 
-        # 배속 설정
-        st.subheader("배속 설정")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            settings['korean_speed'] = st.number_input("한글 배속",
-                                                     value=settings['korean_speed'],
-                                                     min_value=0.1,
-                                                     step=0.1,
-                                                     format="%.1f",
-                                                     key="korean_speed_learning")
-        with col2:
-            settings['english_speed'] = st.number_input("영어 배속",
-                                                      value=settings['english_speed'],
-                                                      min_value=0.1,
-                                                      step=0.1,
-                                                      format="%.1f",
-                                                      key="english_speed_learning")
-        with col3:
-            settings['chinese_speed'] = st.number_input("중국어 배속",
-                                                      value=settings['chinese_speed'],
-                                                      min_value=0.1,
-                                                      step=0.1,
-                                                      format="%.1f",
-                                                      key="chinese_speed_learning")
-
-        # 반복 설정
-        st.subheader("반복 설정")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            settings['first_repeat'] = st.number_input("1순위 반복",
-                                                     value=settings['first_repeat'],
-                                                     min_value=0,
-                                                     step=1,
-                                                     key="first_repeat_learning")
-        with col2:
-            settings['second_repeat'] = st.number_input("2순위 반복",
-                                                      value=settings['second_repeat'],
-                                                      min_value=0,
-                                                      step=1,
-                                                      key="second_repeat_learning")
-        with col3:
-            settings['third_repeat'] = st.number_input("3순위 반복",
-                                                     value=settings['third_repeat'],
-                                                     min_value=0,
-                                                     step=1,
-                                                     key="third_repeat_learning")
-
-        # 음성 설정
-        st.subheader("음성 설정")
-        col1, col2, col3, col4 = st.columns(4)  # 4개의 컬럼으로 변경
-        with col1:
-            settings['kor_voice'] = st.selectbox("한글 음성",
-                                               options=list(VOICE_MAPPING['korean'].keys()),
-                                               index=list(VOICE_MAPPING['korean'].keys()).index(settings['kor_voice']),
-                                               key="kor_voice_learning")
-        with col2:
-            settings['eng_voice'] = st.selectbox("영어 음성",
-                                               options=list(VOICE_MAPPING['english'].keys()),
-                                               index=list(VOICE_MAPPING['english'].keys()).index(settings['eng_voice']),
-                                               key="eng_voice_learning")
-        with col3:
-            current_zh_voice = settings.get('zh_voice', 'Yunjian')
-            try:
-                zh_index = list(VOICE_MAPPING['chinese'].keys()).index(current_zh_voice)
-            except ValueError:
-                zh_index = list(VOICE_MAPPING['chinese'].keys()).index('Yunjian')  # 잘못된 값이면 기본값 사용
-                settings['zh_voice'] = 'Yunjian'  # 설정값 업데이트
-
-            settings['zh_voice'] = st.selectbox("중국어 음성",
-                                             options=list(VOICE_MAPPING['chinese'].keys()),
-                                             index=zh_index,
-                                             key="zh_voice_learning")
-        with col4:
-            settings['jp_voice'] = st.selectbox("일본어 음성",
-                                              options=list(VOICE_MAPPING['japanese'].keys()),
-                                              index=list(VOICE_MAPPING['japanese'].keys()).index(settings.get('jp_voice', 'Nanami')),
-                                              key="jp_voice_learning")
-
-        # 폰트 설정
-        st.subheader("폰트 설정")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            settings['korean_font'] = st.selectbox("한글 폰트",
-                                                 options=['Pretendard', '맑은 고딕', '나눔고딕', '굴림'],
-                                                 index=['Pretendard', '맑은 고딕', '나눔고딕', '굴림'].index(settings['korean_font']),
-                                                 key="korean_font_learning")
-        with col2:
-            settings['english_font'] = st.selectbox("영어 폰트",
-                                                  options=['Pretendard', 'Arial', 'Times New Roman', 'Verdana'],
-                                                  index=['Pretendard', 'Arial', 'Times New Roman', 'Verdana'].index(settings['english_font']),
-                                                  key="english_font_learning")
-        with col3:
-            settings['chinese_font'] = st.selectbox("중국어 폰트",
-                                                  options=['SimSun', 'Microsoft YaHei', 'SimHei'],
-                                                  index=['SimSun', 'Microsoft YaHei', 'SimHei'].index(settings['chinese_font']),
-                                                  key="chinese_font_learning")
+        # 이전의 다른 설정들 제거
 
     # 자막 표시를 위한 빈 컨테이너
     subtitles = [st.empty() for _ in range(3)]
@@ -1028,7 +885,7 @@ async def start_learning():
                 'japanese': {
                     'text': jpn, 
                     'voice': VOICE_MAPPING['japanese'][settings['jp_voice']], 
-                    'speed': settings.get('japanese_speed', 2.0)  # 안전하게 값 가져오기
+                    'speed': settings['japanese_speed']
                 }
             }
 
@@ -1153,7 +1010,7 @@ async def start_learning():
                         await asyncio.sleep(1)  # 알림음이 완전히 재생될 때까지 대기
                     
                     # 2. 브레이크 음성 메시지 생성 및 재생
-                    break_msg = "쉬는 시간입니다, 5초간의 호흡을 느껴보세요"
+                    break_msg = "쉬는 시간입니다, 5초간의 휴식을 느껴보세요"
                     break_audio = await create_audio(break_msg, VOICE_MAPPING['korean']['선희'], 1.0)
                     if break_audio:
                         play_audio(break_audio)
@@ -1206,29 +1063,6 @@ async def start_learning():
         except Exception as e:
             st.error(f"완료 알림음 재생 오류: {e}")
             traceback.print_exc()
-
-    # 학습 화면 폰트 크기 조정 (특정 요소만)
-    st.markdown("""
-        <style>
-            /* 학습종료 버튼 폰트 크기 및 박스 크기 */
-            div[data-testid="stButton"] button:contains('학습 종료') {
-                font-size: 12px !important;
-                padding: 4px 8px !important;
-                height: 28px !important;
-            }
-            
-            /* 학습설정 폰트 크기 */
-            .st-emotion-cache-1629p8f h2:contains('학습 설정') {
-                font-size: 12px !important;
-                margin-bottom: 0.5rem !important;
-            }
-            
-            /* 학습설정 박스 크기 */
-            .st-emotion-cache-1y4p8pa {
-                padding: 0.5rem !important;
-            }
-        </style>
-    """, unsafe_allow_html=True)
 
 def create_personalized_ui():
     """개인별 맞춤 UI 생성"""
