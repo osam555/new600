@@ -15,6 +15,7 @@ import traceback
 import json
 import base64
 from gtts import gTTS
+from pydub import AudioSegment
 
 ## streamlit run en600st/en600_st_app.py
 
@@ -785,46 +786,34 @@ async def create_audio(text, voice, speed=1.0):
 
         # 베트남어인 경우
         if voice == 'vi-VN':
-            # ffmpeg 설치 확인
-            if not check_ffmpeg():
-                st.warning("ffmpeg가 설치되어 있지 않아 베트남어 TTS의 속도 조절이 불가능합니다.")
-                # ffmpeg 없이 기본 gTTS 사용
-                tts = gTTS(text=text, lang='vi')
+            try:
+                # 임시 MP3 파일 생성
                 temp_mp3 = TEMP_DIR / f"temp_{int(time.time()*1000)}.mp3"
+                tts = gTTS(text=text, lang='vi')
                 tts.save(str(temp_mp3))
                 
-                # 간단한 MP3 to WAV 변환 (속도 조절 없이)
-                import pydub
-                audio = pydub.AudioSegment.from_mp3(str(temp_mp3))
-                audio.export(str(output_file), format="wav")
+                # pydub으로 MP3를 WAV로 변환하고 속도 조절
+                audio = AudioSegment.from_mp3(str(temp_mp3))
+                
+                # 속도 조절 (1.0이 기본 속도)
+                if speed != 1.0:
+                    # pydub에서는 속도를 높이려면 playback_speed를 낮춰야 함
+                    adjusted_audio = audio._spawn(audio.raw_data, overrides={
+                        "frame_rate": int(audio.frame_rate * (1.0 / speed))
+                    })
+                    adjusted_audio = adjusted_audio.set_frame_rate(audio.frame_rate)
+                else:
+                    adjusted_audio = audio
+                
+                # WAV로 저장
+                adjusted_audio.export(str(output_file), format="wav")
                 
                 # 임시 MP3 파일 삭제
                 os.remove(temp_mp3)
                 return str(output_file)
-            
-            # ffmpeg가 있는 경우 기존 로직 사용
-            temp_mp3 = TEMP_DIR / f"temp_{int(time.time()*1000)}.mp3"
-            tts = gTTS(text=text, lang='vi')
-            tts.save(str(temp_mp3))
-            
-            # 속도 조절을 위한 ffmpeg 필터 설정
-            filter_str = f"atempo={speed}"
-            
-            try:
-                subprocess.run([
-                    'ffmpeg', '-y',
-                    '-i', str(temp_mp3),
-                    '-filter:a', filter_str,
-                    '-acodec', 'pcm_s16le',
-                    '-ar', '44100',
-                    '-ac', '2',
-                    str(output_file)
-                ], check=True, capture_output=True, text=True)
                 
-                os.remove(temp_mp3)
-                return str(output_file)
-            except subprocess.CalledProcessError as e:
-                st.error(f"FFmpeg 오류: {e.stderr}")
+            except Exception as e:
+                st.error(f"베트남어 음성 생성 오류: {e}")
                 return None
         else:
             # edge-tts 사용 (기존 로직)
