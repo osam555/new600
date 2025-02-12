@@ -923,11 +923,31 @@ async def start_learning():
         for i, (eng, kor, chn, jpn, vn) in enumerate(zip(english, korean, chinese, japanese, vietnamese)):
             # 언어별 텍스트와 음성 매핑
             lang_mapping = {
-                'korean': {'text': kor, 'voice': VOICE_MAPPING['korean'][settings['kor_voice']], 'speed': settings['korean_speed']},
-                'english': {'text': eng, 'voice': VOICE_MAPPING['english'][settings['eng_voice']], 'speed': settings['english_speed']},
-                'chinese': {'text': chn, 'voice': VOICE_MAPPING['chinese'][settings['zh_voice']], 'speed': settings['chinese_speed']},
-                'japanese': {'text': jpn, 'voice': VOICE_MAPPING['japanese'][settings.get('jp_voice', 'Nanami')], 'speed': settings.get('japanese_speed', 2.0)},  # 기본값 2.0으로 안전하게 처리
-                'vietnamese': {'text': vn, 'voice': VOICE_MAPPING['vietnamese']['vi-VN'], 'speed': settings['vietnamese_speed']}
+                'korean': {
+                    'text': kor, 
+                    'voice': VOICE_MAPPING['korean'][settings.get('kor_voice', '선희')], 
+                    'speed': settings.get('korean_speed', 2.0)
+                },
+                'english': {
+                    'text': eng, 
+                    'voice': VOICE_MAPPING['english'][settings.get('eng_voice', 'Steffan')], 
+                    'speed': settings.get('english_speed', 2.0)
+                },
+                'chinese': {
+                    'text': chn, 
+                    'voice': VOICE_MAPPING['chinese'][settings.get('zh_voice', 'Yunjian')], 
+                    'speed': settings.get('chinese_speed', 2.0)
+                },
+                'japanese': {
+                    'text': jpn, 
+                    'voice': VOICE_MAPPING['japanese'][settings.get('jp_voice', 'Nanami')], 
+                    'speed': settings.get('japanese_speed', 2.0)
+                },
+                'vietnamese': {
+                    'text': vn, 
+                    'voice': VOICE_MAPPING['vietnamese']['vi-VN'], 
+                    'speed': settings.get('vietnamese_speed', 2.0)
+                }
             }
 
             progress.progress((i + 1) / total_sentences)
