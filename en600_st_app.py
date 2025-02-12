@@ -16,7 +16,7 @@ import json
 import base64
 from gtts import gTTS
 
-## streamlit run word_memory/en600_st_app.py
+### streamlit run word_memory/en600_st_app.py
 
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -675,20 +675,20 @@ def create_settings_ui(return_to_learning=False):
         st.markdown("""
             <style>
                 /* 숫자 입력 필드 스타일 */
-                div[data-testid="stNumberInput"] {{
+                div[data-testid="stNumberInput"] {
                     max-width: 150px;
-                }}
+                }
                 
                 /* 숫자 입력 필드 레이블 스타일 */
-                div[data-testid="stNumberInput"] label {{
+                div[data-testid="stNumberInput"] label {
                     font-size: 15px !important;
-                }}
+                }
                 
                 /* 숫자 입력 필드 입력창 스타일 */
-                div[data-testid="stNumberInput"] input {{
+                div[data-testid="stNumberInput"] input {
                     font-size: 15px !important;
                     padding: 4px 8px !important;
-                }}
+                }
             </style>
         """, unsafe_allow_html=True)
 
