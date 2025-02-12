@@ -167,7 +167,8 @@ def initialize_session_state():
             'eng_voice': 'Steffan',
             'kor_voice': '선희',
             'zh_voice': 'Yunjian',
-            'jp_voice': 'Nanami',  # 일본어 음성 기본값 추가
+            'jp_voice': 'Nanami',  # 일본어 기본 음성 추가
+            'vi_voice': 'vi-VN',   # 베트남어 기본 음성 추가
             'start_row': 301,
             'end_row': 350,
             'word_delay': 0.5,
@@ -206,7 +207,6 @@ def initialize_session_state():
             'vietnamese_font': 'Arial',  # 베트남어 폰트 기본값 추가
             'vietnamese_font_size': 30,
             'vietnamese_speed': 2.0,
-            'vi_voice': 'vi-VN',  # 베트남어 음성 기본값 추가
         }
 
     # break.wav 파일 존재 여부 확인
