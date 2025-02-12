@@ -16,7 +16,7 @@ import json
 import base64
 from gtts import gTTS
 
-### streamlit run word_memory/en600_st_app.py
+### streamlit run en600st/en600_st_app.py
 
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
