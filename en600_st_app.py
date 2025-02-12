@@ -153,10 +153,10 @@ def initialize_session_state():
             'first_repeat': 0,
             'second_repeat': 1,
             'third_repeat': 1,  
-            'kor_voice': '선희',
             'eng_voice': 'Steffan',
+            'kor_voice': '선희',
             'zh_voice': 'Yunjian',
-            'jp_voice': 'Nanami',
+            'jp_voice': 'Nanami',  # 일본어 음성 기본값 추가
             'start_row': 301,
             'end_row': 350,
             'word_delay': 0.5,
