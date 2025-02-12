@@ -16,7 +16,7 @@ import json
 import base64
 from gtts import gTTS
 
-## streamlit run en600st/en600_st_app.py
+## streamlit run word_memory/en600_st_app.py
 
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -202,11 +202,11 @@ def initialize_session_state():
             'chinese_color': '#00FF00',  # 다크모드: 초록색, 브라이트모드: 검정색
             'japanese_color': '#00FF00' if is_dark_mode else '#FFFFFF',  # 다크모드: 초록색, 라이트모드: 흰색
             'vietnamese_color': '#00FF00' if is_dark_mode else '#FFFFFF',  # 다크모드: 초록색, 라이트모드: 흰색
+            'japanese_speed': 2.0,  # 일본어 배속 기본값 추가
             'vietnamese_font': 'Arial',  # 베트남어 폰트 기본값 추가
             'vietnamese_font_size': 30,
             'vietnamese_speed': 2.0,
             'vi_voice': 'vi-VN',  # 베트남어 음성 기본값 추가
-            'japanese_speed': 2.0,  # 일본어 속도 기본값 추가
         }
 
     # break.wav 파일 존재 여부 확인
@@ -675,20 +675,20 @@ def create_settings_ui(return_to_learning=False):
         st.markdown("""
             <style>
                 /* 숫자 입력 필드 스타일 */
-                div[data-testid="stNumberInput"] {
+                div[data-testid="stNumberInput"] {{
                     max-width: 150px;
-                }
+                }}
                 
                 /* 숫자 입력 필드 레이블 스타일 */
-                div[data-testid="stNumberInput"] label {
+                div[data-testid="stNumberInput"] label {{
                     font-size: 15px !important;
-                }
+                }}
                 
                 /* 숫자 입력 필드 입력창 스타일 */
-                div[data-testid="stNumberInput"] input {
+                div[data-testid="stNumberInput"] input {{
                     font-size: 15px !important;
                     padding: 4px 8px !important;
-                }
+                }}
             </style>
         """, unsafe_allow_html=True)
 
@@ -764,13 +764,6 @@ def check_ffmpeg():
         subprocess.run(['ffmpeg', '-version'], capture_output=True)
         return True
     except FileNotFoundError:
-        st.error("ffmpeg가 설치되어 있지 않습니다. 베트남어 음성을 사용하려면 ffmpeg를 설치해주세요.")
-        st.markdown("""
-            ### ffmpeg 설치 방법:
-            - Windows: `winget install ffmpeg` 또는 [FFmpeg 다운로드](https://www.ffmpeg.org/download.html)
-            - Mac: `brew install ffmpeg`
-            - Linux: `sudo apt-get install ffmpeg`
-        """)
         return False
 
 async def create_audio(text, voice, speed=1.0):
@@ -779,46 +772,50 @@ async def create_audio(text, voice, speed=1.0):
         if not text or not voice:
             return None
 
-        # 임시 파일 이름 생성
         output_file = TEMP_DIR / f"temp_{int(time.time()*1000)}.wav"
 
-        # 베트남어인 경우 gTTS 사용
+        # 베트남어인 경우
         if voice == 'vi-VN':
             # ffmpeg 설치 확인
             if not check_ffmpeg():
-                st.warning("베트남어 음성을 재생할 수 없습니다. ffmpeg를 설치해주세요.")
-                return None
-                
-            try:
-                temp_mp3 = TEMP_DIR / f"temp_{int(time.time()*1000)}.mp3"
+                st.warning("ffmpeg가 설치되어 있지 않아 베트남어 TTS의 속도 조절이 불가능합니다.")
+                # ffmpeg 없이 기본 gTTS 사용
                 tts = gTTS(text=text, lang='vi')
+                temp_mp3 = TEMP_DIR / f"temp_{int(time.time()*1000)}.mp3"
                 tts.save(str(temp_mp3))
                 
-                # 속도 조절을 위한 ffmpeg 필터 설정
-                if speed > 1.0:
-                    filter_str = f"atempo={speed}"
-                else:
-                    filter_str = f"atempo={speed}"
+                # 간단한 MP3 to WAV 변환 (속도 조절 없이)
+                import pydub
+                audio = pydub.AudioSegment.from_mp3(str(temp_mp3))
+                audio.export(str(output_file), format="wav")
                 
-                # MP3를 WAV로 변환 및 속도 조절
-                try:
-                    subprocess.run([
-                        'ffmpeg', '-y',
-                        '-i', str(temp_mp3),
-                        '-filter:a', filter_str,
-                        '-acodec', 'pcm_s16le',
-                        '-ar', '44100',
-                        '-ac', '2',
-                        str(output_file)
-                    ], check=True, capture_output=True, text=True)
-                    
-                    # 임시 MP3 파일 삭제
-                    os.remove(temp_mp3)
-                except subprocess.CalledProcessError as e:
-                    st.error(f"FFmpeg 오류: {e.stderr}")
-                    return None
-            except Exception as e:
-                st.error(f"베트남어 음성 생성 오류: {e}")
+                # 임시 MP3 파일 삭제
+                os.remove(temp_mp3)
+                return str(output_file)
+            
+            # ffmpeg가 있는 경우 기존 로직 사용
+            temp_mp3 = TEMP_DIR / f"temp_{int(time.time()*1000)}.mp3"
+            tts = gTTS(text=text, lang='vi')
+            tts.save(str(temp_mp3))
+            
+            # 속도 조절을 위한 ffmpeg 필터 설정
+            filter_str = f"atempo={speed}"
+            
+            try:
+                subprocess.run([
+                    'ffmpeg', '-y',
+                    '-i', str(temp_mp3),
+                    '-filter:a', filter_str,
+                    '-acodec', 'pcm_s16le',
+                    '-ar', '44100',
+                    '-ac', '2',
+                    str(output_file)
+                ], check=True, capture_output=True, text=True)
+                
+                os.remove(temp_mp3)
+                return str(output_file)
+            except subprocess.CalledProcessError as e:
+                st.error(f"FFmpeg 오류: {e.stderr}")
                 return None
         else:
             # edge-tts 사용 (기존 로직)
@@ -829,12 +826,7 @@ async def create_audio(text, voice, speed=1.0):
 
             communicate = edge_tts.Communicate(text, voice, rate=rate_str)
             await communicate.save(str(output_file))
-
-        if output_file.exists() and output_file.stat().st_size > 0:
             return str(output_file)
-        else:
-            st.error(f"음성 파일 생성 실패: {text[:20]}...")
-            return None
 
     except Exception as e:
         st.error(f"음성 생성 오류: {e}")
@@ -870,7 +862,7 @@ def create_learning_ui():
         speed_info.append(f"중국어 {zh_speed_text}배")
         
         # 베트남어 배속 정보
-        vn_speed = st.session_state.settings.get('vietnamese_speed', 2.0)  # 기본값 2.0으로 안전하게 처리
+        vn_speed = st.session_state.settings['vietnamese_speed']
         vn_speed_text = str(int(vn_speed)) if vn_speed.is_integer() else f"{vn_speed:.1f}"
         speed_info.append(f"베트남어 {vn_speed_text}배")
         
@@ -946,31 +938,11 @@ async def start_learning():
         for i, (eng, kor, chn, jpn, vn) in enumerate(zip(english, korean, chinese, japanese, vietnamese)):
             # 언어별 텍스트와 음성 매핑
             lang_mapping = {
-                'korean': {
-                    'text': kor, 
-                    'voice': VOICE_MAPPING['korean'][settings.get('kor_voice', '선희')], 
-                    'speed': settings.get('korean_speed', 2.0)
-                },
-                'english': {
-                    'text': eng, 
-                    'voice': VOICE_MAPPING['english'][settings.get('eng_voice', 'Steffan')], 
-                    'speed': settings.get('english_speed', 2.0)
-                },
-                'chinese': {
-                    'text': chn, 
-                    'voice': VOICE_MAPPING['chinese'][settings.get('zh_voice', 'Yunjian')], 
-                    'speed': settings.get('chinese_speed', 2.0)
-                },
-                'japanese': {
-                    'text': jpn, 
-                    'voice': VOICE_MAPPING['japanese'][settings.get('jp_voice', 'Nanami')], 
-                    'speed': settings.get('japanese_speed', 2.0)
-                },
-                'vietnamese': {
-                    'text': vn, 
-                    'voice': VOICE_MAPPING['vietnamese']['vi-VN'], 
-                    'speed': settings.get('vietnamese_speed', 2.0)
-                }
+                'korean': {'text': kor, 'voice': VOICE_MAPPING['korean'][settings['kor_voice']], 'speed': settings['korean_speed']},
+                'english': {'text': eng, 'voice': VOICE_MAPPING['english'][settings['eng_voice']], 'speed': settings['english_speed']},
+                'chinese': {'text': chn, 'voice': VOICE_MAPPING['chinese'][settings['zh_voice']], 'speed': settings['chinese_speed']},
+                'japanese': {'text': jpn, 'voice': VOICE_MAPPING['japanese'][settings['jp_voice']], 'speed': settings['japanese_speed']},
+                'vietnamese': {'text': vn, 'voice': VOICE_MAPPING['vietnamese']['vi-VN'], 'speed': settings['vietnamese_speed']}
             }
 
             progress.progress((i + 1) / total_sentences)
@@ -1215,6 +1187,10 @@ def save_study_time():
             }, f)
     except Exception as e:
         st.error(f"학습 시간 저장 중 오류: {e}")
+
+def get_setting(key, default_value):
+    """안전하게 설정값을 가져오는 유틸리티 함수"""
+    return st.session_state.settings.get(key, default_value)
 
 if __name__ == "__main__":
     main()
