@@ -926,7 +926,7 @@ async def start_learning():
                 'korean': {'text': kor, 'voice': VOICE_MAPPING['korean'][settings['kor_voice']], 'speed': settings['korean_speed']},
                 'english': {'text': eng, 'voice': VOICE_MAPPING['english'][settings['eng_voice']], 'speed': settings['english_speed']},
                 'chinese': {'text': chn, 'voice': VOICE_MAPPING['chinese'][settings['zh_voice']], 'speed': settings['chinese_speed']},
-                'japanese': {'text': jpn, 'voice': VOICE_MAPPING['japanese'][settings['jp_voice']], 'speed': settings['japanese_speed']},
+                'japanese': {'text': jpn, 'voice': VOICE_MAPPING['japanese'][settings.get('jp_voice', 'Nanami')], 'speed': settings['japanese_speed']},  # 기본값 'Nanami'로 안전하게 처리
                 'vietnamese': {'text': vn, 'voice': VOICE_MAPPING['vietnamese']['vi-VN'], 'speed': settings['vietnamese_speed']}
             }
 
