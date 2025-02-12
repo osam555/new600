@@ -758,6 +758,21 @@ def play_audio(file_path):
             except Exception as e:
                 st.error(f"임시 파일 삭제 오류: {e}")
 
+def check_ffmpeg():
+    """ffmpeg 설치 여부 확인"""
+    try:
+        subprocess.run(['ffmpeg', '-version'], capture_output=True)
+        return True
+    except FileNotFoundError:
+        st.error("ffmpeg가 설치되어 있지 않습니다. 베트남어 음성을 사용하려면 ffmpeg를 설치해주세요.")
+        st.markdown("""
+            ### ffmpeg 설치 방법:
+            - Windows: `winget install ffmpeg` 또는 [FFmpeg 다운로드](https://www.ffmpeg.org/download.html)
+            - Mac: `brew install ffmpeg`
+            - Linux: `sudo apt-get install ffmpeg`
+        """)
+        return False
+
 async def create_audio(text, voice, speed=1.0):
     """음성 파일 생성"""
     try:
@@ -769,33 +784,41 @@ async def create_audio(text, voice, speed=1.0):
 
         # 베트남어인 경우 gTTS 사용
         if voice == 'vi-VN':
-            from gtts import gTTS
-            temp_mp3 = TEMP_DIR / f"temp_{int(time.time()*1000)}.mp3"
-            tts = gTTS(text=text, lang='vi')
-            tts.save(str(temp_mp3))
-            
-            # 속도 조절을 위한 ffmpeg 필터 설정
-            if speed > 1.0:
-                filter_str = f"atempo={speed}"
-            else:
-                filter_str = f"atempo={speed}"
-            
-            # MP3를 WAV로 변환 및 속도 조절
-            try:
-                subprocess.run([
-                    'ffmpeg', '-y',
-                    '-i', str(temp_mp3),
-                    '-filter:a', filter_str,
-                    '-acodec', 'pcm_s16le',
-                    '-ar', '44100',
-                    '-ac', '2',
-                    str(output_file)
-                ], check=True, capture_output=True, text=True)
+            # ffmpeg 설치 확인
+            if not check_ffmpeg():
+                st.warning("베트남어 음성을 재생할 수 없습니다. ffmpeg를 설치해주세요.")
+                return None
                 
-                # 임시 MP3 파일 삭제
-                os.remove(temp_mp3)
-            except subprocess.CalledProcessError as e:
-                st.error(f"FFmpeg 오류: {e.stderr}")
+            try:
+                temp_mp3 = TEMP_DIR / f"temp_{int(time.time()*1000)}.mp3"
+                tts = gTTS(text=text, lang='vi')
+                tts.save(str(temp_mp3))
+                
+                # 속도 조절을 위한 ffmpeg 필터 설정
+                if speed > 1.0:
+                    filter_str = f"atempo={speed}"
+                else:
+                    filter_str = f"atempo={speed}"
+                
+                # MP3를 WAV로 변환 및 속도 조절
+                try:
+                    subprocess.run([
+                        'ffmpeg', '-y',
+                        '-i', str(temp_mp3),
+                        '-filter:a', filter_str,
+                        '-acodec', 'pcm_s16le',
+                        '-ar', '44100',
+                        '-ac', '2',
+                        str(output_file)
+                    ], check=True, capture_output=True, text=True)
+                    
+                    # 임시 MP3 파일 삭제
+                    os.remove(temp_mp3)
+                except subprocess.CalledProcessError as e:
+                    st.error(f"FFmpeg 오류: {e.stderr}")
+                    return None
+            except Exception as e:
+                st.error(f"베트남어 음성 생성 오류: {e}")
                 return None
         else:
             # edge-tts 사용 (기존 로직)
