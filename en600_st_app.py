@@ -583,7 +583,7 @@ def create_settings_ui(return_to_learning=False):
                                    key="third_hide")
 
         # 폰트 및 색상 설정 섹션
-        st.subheader("폰트 사이즈 | 색상")
+        st.subheader("폰트 크기 | 색깔")
         col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
             settings['korean_font_size'] = st.number_input("한글",
@@ -732,88 +732,38 @@ def create_settings_ui(return_to_learning=False):
             </style>
         """, unsafe_allow_html=True)
 
-def play_audio(file_path):
-    """음성 파일 재생"""
-    try:
-        if not file_path or not os.path.exists(file_path):
-            st.error(f"파일 경로 오류: {file_path}")
-            return
-
-        # base64 인코딩
-        with open(file_path, 'rb') as f:
-            audio_bytes = f.read()
-        audio_base64 = base64.b64encode(audio_bytes).decode()
-
-        # HTML audio 태그로 재생
-        st.markdown(f"""
-            <audio autoplay style="display: none">
-                <source src="data:audio/wav;base64,{audio_base64}" type="audio/wav">
-            </audio>
-        """, unsafe_allow_html=True)
-
-        # soundfile로 파일 길이 계산
-        data, samplerate = sf.read(file_path)
-        duration = len(data) / samplerate
-        
-        # 오디오 재생이 끝날 때까지 대기
-        time.sleep(duration)
-
-    except Exception as e:
-        st.error(f"음성 재생 오류: {e}")
-    finally:
-        # 임시 파일 삭제
-        if file_path and TEMP_DIR in Path(file_path).parents:
-            try:
-                os.remove(file_path)
-            except Exception as e:
-                st.error(f"임시 파일 삭제 오류: {e}")
-
-def check_ffmpeg():
-    """ffmpeg 설치 여부 확인"""
-    try:
-        subprocess.run(['ffmpeg', '-version'], capture_output=True)
-        return True
-    except FileNotFoundError:
-        return False
-
 async def create_audio(text, voice, speed=1.0):
-    """음성 파일 생성"""
+    """음성 파일 생성 (pydub 사용, ffmpeg 불필요)"""
     try:
         if not text or not voice:
             return None
 
         output_file = TEMP_DIR / f"temp_{int(time.time()*1000)}.wav"
 
-        # 베트남어인 경우
         if voice == 'vi-VN':
             try:
-                # 임시 MP3 파일 생성
-                temp_mp3 = TEMP_DIR / f"temp_{int(time.time()*1000)}.mp3"
+                # gTTS를 사용하여 MP3 파일 생성
                 tts = gTTS(text=text, lang='vi')
+                temp_mp3 = TEMP_DIR / f"temp_{int(time.time() * 1000)}.mp3"
                 tts.save(str(temp_mp3))
-                
-                # pydub으로 MP3를 WAV로 변환하고 속도 조절
+
+                # pydub를 사용하여 MP3 로드
                 audio = AudioSegment.from_mp3(str(temp_mp3))
-                
-                # 속도 조절 (1.0이 기본 속도)
+
+                # 속도 조절 (speedup 함수 사용)
                 if speed != 1.0:
-                    # pydub에서는 속도를 높이려면 playback_speed를 낮춰야 함
-                    adjusted_audio = audio._spawn(audio.raw_data, overrides={
-                        "frame_rate": int(audio.frame_rate * (1.0 / speed))
-                    })
-                    adjusted_audio = adjusted_audio.set_frame_rate(audio.frame_rate)
-                else:
-                    adjusted_audio = audio
-                
-                # WAV로 저장
-                adjusted_audio.export(str(output_file), format="wav")
-                
+                    audio = audio.speedup(playback_speed=speed)
+
+                # WAV로 저장 (pydub 사용)
+                audio.export(str(output_file), format="wav")
+
                 # 임시 MP3 파일 삭제
                 os.remove(temp_mp3)
                 return str(output_file)
-                
+
             except Exception as e:
                 st.error(f"베트남어 음성 생성 오류: {e}")
+                traceback.print_exc()
                 return None
         else:
             # edge-tts 사용 (기존 로직)
@@ -1051,8 +1001,9 @@ async def start_learning():
                         lang_mapping[lang]['speed']
                     )
                     if audio_file:
+                        # 모든 언어에 대해 play_audio 사용
                         play_audio(audio_file)
-                        if _ < repeat - 1:  # 마지막 반복이 아닌 경우에만 대기
+                        if _ < repeat - 1:
                             await asyncio.sleep(settings['spacing'])
 
             # 다음 문장으로 넘어가기 전 대기
@@ -1189,6 +1140,43 @@ def save_study_time():
 def get_setting(key, default_value):
     """안전하게 설정값을 가져오는 유틸리티 함수"""
     return st.session_state.settings.get(key, default_value)
+
+def play_audio(file_path):
+    """음성 파일 재생"""
+    try:
+        if not file_path or not os.path.exists(file_path):
+            st.error(f"파일 경로 오류: {file_path}")
+            return
+
+        # soundfile로 파일 길이 계산
+        data, samplerate = sf.read(file_path)
+        duration = len(data) / samplerate
+
+        # base64 인코딩
+        with open(file_path, 'rb') as f:
+            audio_bytes = f.read()
+        audio_base64 = base64.b64encode(audio_bytes).decode()
+
+        # HTML audio 태그로 재생
+        st.markdown(f"""
+            <audio autoplay style="display: none">
+                <source src="data:audio/wav;base64,{audio_base64}" type="audio/wav">
+            </audio>
+        """, unsafe_allow_html=True)
+
+        # 재생 시간만큼 대기
+        time.sleep(duration)
+
+    except Exception as e:
+        st.error(f"음성 재생 오류: {e}")
+        traceback.print_exc()
+    finally:
+        # 임시 파일 삭제
+        if file_path and TEMP_DIR in Path(file_path).parents:
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                st.error(f"임시 파일 삭제 오류: {e}")
 
 if __name__ == "__main__":
     main()
