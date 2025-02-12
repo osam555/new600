@@ -202,11 +202,11 @@ def initialize_session_state():
             'chinese_color': '#00FF00',  # 다크모드: 초록색, 브라이트모드: 검정색
             'japanese_color': '#00FF00' if is_dark_mode else '#FFFFFF',  # 다크모드: 초록색, 라이트모드: 흰색
             'vietnamese_color': '#00FF00' if is_dark_mode else '#FFFFFF',  # 다크모드: 초록색, 라이트모드: 흰색
-            'japanese_speed': 2.0,  # 일본어 배속 기본값 추가
             'vietnamese_font': 'Arial',  # 베트남어 폰트 기본값 추가
             'vietnamese_font_size': 30,
             'vietnamese_speed': 2.0,
             'vi_voice': 'vi-VN',  # 베트남어 음성 기본값 추가
+            'japanese_speed': 2.0,  # 일본어 속도 기본값 추가
         }
 
     # break.wav 파일 존재 여부 확인
@@ -926,7 +926,7 @@ async def start_learning():
                 'korean': {'text': kor, 'voice': VOICE_MAPPING['korean'][settings['kor_voice']], 'speed': settings['korean_speed']},
                 'english': {'text': eng, 'voice': VOICE_MAPPING['english'][settings['eng_voice']], 'speed': settings['english_speed']},
                 'chinese': {'text': chn, 'voice': VOICE_MAPPING['chinese'][settings['zh_voice']], 'speed': settings['chinese_speed']},
-                'japanese': {'text': jpn, 'voice': VOICE_MAPPING['japanese'][settings.get('jp_voice', 'Nanami')], 'speed': settings['japanese_speed']},  # 기본값 'Nanami'로 안전하게 처리
+                'japanese': {'text': jpn, 'voice': VOICE_MAPPING['japanese'][settings.get('jp_voice', 'Nanami')], 'speed': settings.get('japanese_speed', 2.0)},  # 기본값 2.0으로 안전하게 처리
                 'vietnamese': {'text': vn, 'voice': VOICE_MAPPING['vietnamese']['vi-VN'], 'speed': settings['vietnamese_speed']}
             }
 
