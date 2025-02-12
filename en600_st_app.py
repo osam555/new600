@@ -847,7 +847,7 @@ def create_learning_ui():
         speed_info.append(f"중국어 {zh_speed_text}배")
         
         # 베트남어 배속 정보
-        vn_speed = st.session_state.settings['vietnamese_speed']
+        vn_speed = st.session_state.settings.get('vietnamese_speed', 2.0)  # 기본값 2.0으로 안전하게 처리
         vn_speed_text = str(int(vn_speed)) if vn_speed.is_integer() else f"{vn_speed:.1f}"
         speed_info.append(f"베트남어 {vn_speed_text}배")
         
