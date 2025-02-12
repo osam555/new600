@@ -671,7 +671,7 @@ def create_settings_ui():
         'eng_voice': settings['eng_voice'],
         'kor_voice': settings['kor_voice'],
         'zh_voice': settings['zh_voice'],
-        'jp_voice': settings['jp_voice'],
+        'jp_voice': settings.get('jp_voice', 'Nanami'),  # 기본값 사용
         'vi_voice': settings.get('vi_voice', 'vi-VN'),  # 기본값 사용
         'spacing': spacing,
         'subtitle_delay': subtitle_delay,
