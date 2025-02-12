@@ -14,6 +14,7 @@ import numpy as np
 import traceback
 import json
 import base64
+from gtts import gTTS
 
 ## streamlit run word_memory/en600_st_app.py
 
@@ -32,7 +33,8 @@ LANG_DISPLAY = {
     'korean': '한국어',
     'english': '영어',
     'chinese': '중국어',
-    'japanese': '일본어'
+    'japanese': '일본어',
+    'vietnamese': '베트남어'  # 베트남어 추가
 }
 
 # 음성 매핑에 남성 음성 추가
@@ -62,11 +64,14 @@ VOICE_MAPPING = {
         "Nanami": "ja-JP-NanamiNeural",
         "Keita": "ja-JP-KeitaNeural",
         "Naoki": "ja-JP-NaokiNeural"
+    },
+    'vietnamese': {
+        'vi-VN': 'vi-VN'  # gTTS용 베트남어 음성
     }
 }
 
 # 언어 설정
-LANGUAGES = ['english', 'korean', 'chinese', 'japanese', 'none']
+LANGUAGES = ['english', 'korean', 'chinese', 'japanese', 'vietnamese', 'none']
 
 # 색상 매핑 추가
 COLOR_MAPPING = {
@@ -132,6 +137,7 @@ def initialize_session_state():
                             'korean_color': '#00FF00',   # 초록색으로 변경
                             'chinese_color': '#00FF00',  # 초록색으로 변경
                             'japanese_color': '#00FF00', # 초록색으로 변경
+                            'vietnamese_color': '#00FF00', # 초록색으로 변경
                         })
                     else:
                         saved_settings.update({
@@ -139,6 +145,7 @@ def initialize_session_state():
                             'korean_color': '#000000',    # 검정색
                             'chinese_color': '#000000',   # 검정색
                             'japanese_color': '#FFFFFF',
+                            'vietnamese_color': '#FFFFFF',
                         })
                     st.session_state.settings = saved_settings
                     return
@@ -179,7 +186,6 @@ def initialize_session_state():
             'chinese_font_size': 32,
             'japanese_font': 'PretendardJP-Light',
             'japanese_font_size': 28,
-            'japanese_color': '#00FF00' if is_dark_mode else '#000000',
             'hide_subtitles': {
                 'first_lang': False,
                 'second_lang': False,
@@ -190,7 +196,13 @@ def initialize_session_state():
             'english_color': '#00FF00',  # 다크모드: 초록색, 브라이트모드: 검정색
             'korean_color': '#00FF00',   # 다크모드: 초록색, 브라이트모드: 검정색
             'chinese_color': '#00FF00',  # 다크모드: 초록색, 브라이트모드: 검정색
+            'japanese_color': '#00FF00' if is_dark_mode else '#FFFFFF',  # 다크모드: 초록색, 라이트모드: 흰색
+            'vietnamese_color': '#00FF00' if is_dark_mode else '#FFFFFF',  # 다크모드: 초록색, 라이트모드: 흰색
             'japanese_speed': 2.0,  # 일본어 배속 기본값 추가
+            'vietnamese_font': 'Arial',  # 베트남어 폰트 기본값 추가
+            'vietnamese_font_size': 30,
+            'vietnamese_speed': 2.0,
+            'vi_voice': 'vi-VN',  # 베트남어 음성 기본값 추가
         }
 
     # break.wav 파일 존재 여부 확인
@@ -221,6 +233,7 @@ def create_settings_ui():
                 'korean_color': '#FFFFFF',    # 흰색
                 'chinese_color': '#00FF00',   # 초록색
                 'japanese_color': '#00FF00',
+                'vietnamese_color': '#00FF00',
             })
     else:
         if settings['korean_color'] == '#FFFFFF':  # 이전에 다크 모드였다면
@@ -229,6 +242,7 @@ def create_settings_ui():
                 'korean_color': '#000000',    # 검정색
                 'chinese_color': '#000000',   # 검정색
                 'japanese_color': '#FFFFFF',
+                'vietnamese_color': '#FFFFFF',
             })
     
     # CSS 스타일 추가 (다크 모드 대응)
@@ -375,8 +389,8 @@ def create_settings_ui():
     col1, col2, col3 = st.columns(3)
     with col1:
         settings['first_lang'] = st.selectbox("1순위 언어",
-            options=['korean', 'english', 'chinese', 'japanese'],
-            index=['korean', 'english', 'chinese', 'japanese'].index(settings['first_lang']),
+            options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
+            index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(settings['first_lang']),
             format_func=lambda x: LANG_DISPLAY[x],
             key="settings_first_lang")
         first_repeat = st.number_input("음성 재생(횟수)",
@@ -385,8 +399,16 @@ def create_settings_ui():
                                      key="first_repeat",
                                      format="%d")
         speed_key = f"{settings['first_lang']}_speed"
+        # 기본값 설정 추가
+        default_speeds = {
+            'korean_speed': 2.0,
+            'english_speed': 2.0,
+            'chinese_speed': 2.0,
+            'japanese_speed': 2.0,
+            'vietnamese_speed': 2.0
+        }
         first_speed = st.number_input("음성 속도(배)",
-                                    value=settings[speed_key],
+                                    value=settings.get(speed_key, default_speeds[speed_key]),
                                     min_value=0.1,
                                     step=0.1,
                                     format="%.1f",
@@ -395,8 +417,8 @@ def create_settings_ui():
 
     with col2:
         settings['second_lang'] = st.selectbox("2순위 언어",
-            options=['korean', 'english', 'chinese', 'japanese'],
-            index=['korean', 'english', 'chinese', 'japanese'].index(settings['second_lang']),
+            options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
+            index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(settings['second_lang']),
             format_func=lambda x: LANG_DISPLAY[x],
             key="settings_second_lang")
         second_repeat = st.number_input("음성 재생(횟수)",
@@ -406,7 +428,7 @@ def create_settings_ui():
                                       format="%d")
         speed_key = f"{settings['second_lang']}_speed"
         second_speed = st.number_input("음성 속도(배)",
-                                     value=settings[speed_key],
+                                     value=settings.get(speed_key, default_speeds[speed_key]),
                                      min_value=0.1,
                                      step=0.1,
                                      format="%.1f",
@@ -415,8 +437,8 @@ def create_settings_ui():
 
     with col3:
         settings['third_lang'] = st.selectbox("3순위 언어",
-            options=['korean', 'english', 'chinese', 'japanese'],
-            index=['korean', 'english', 'chinese', 'japanese'].index(settings['third_lang']),
+            options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
+            index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(settings['third_lang']),
             format_func=lambda x: LANG_DISPLAY[x],
             key="settings_third_lang")
         third_repeat = st.number_input("음성 재생(횟수)",
@@ -426,7 +448,7 @@ def create_settings_ui():
                                      format="%d")
         speed_key = f"{settings['third_lang']}_speed"
         third_speed = st.number_input("음성 속도(배)",
-                                    value=settings[speed_key],
+                                    value=settings.get(speed_key, default_speeds[speed_key]),
                                     min_value=0.1,
                                     step=0.1,
                                     format="%.1f",
@@ -491,7 +513,7 @@ def create_settings_ui():
 
     # 폰트 및 색상 설정 섹션
     st.subheader("폰트 설정")
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         col1_1, col1_2 = st.columns([0.7, 0.3])
         with col1_1:
@@ -558,10 +580,10 @@ def create_settings_ui():
 
     # 색상 설정 수정
     st.subheader("폰트 색상")
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         default_color = 'green'  # 기본값을 초록색으로 변경
-        selected_color = st.selectbox("한글 색상",
+        selected_color = st.selectbox("한글",
                                     options=list(COLOR_MAPPING.keys()),
                                     index=list(COLOR_MAPPING.keys()).index(default_color),
                                     key="korean_color_select")
@@ -569,7 +591,7 @@ def create_settings_ui():
 
     with col2:
         default_color = 'green'  # 기본값을 초록색으로 변경
-        selected_color = st.selectbox("영어 색상",
+        selected_color = st.selectbox("영어",
                                     options=list(COLOR_MAPPING.keys()),
                                     index=list(COLOR_MAPPING.keys()).index(default_color),
                                     key="english_color_select")
@@ -577,19 +599,27 @@ def create_settings_ui():
 
     with col3:
         default_color = 'green'  # 기본값을 초록색으로 변경
-        selected_color = st.selectbox("중국어 색상",
+        selected_color = st.selectbox("중국어",
                                     options=list(COLOR_MAPPING.keys()),
                                     index=list(COLOR_MAPPING.keys()).index(default_color),
                                     key="chinese_color_select")
         settings['chinese_color'] = COLOR_MAPPING[selected_color]
 
     with col4:
-        default_color = 'green'  # 기본값을 초록색으로 변경
-        selected_color = st.selectbox("일본어 색상",
+        default_color = 'green' if st.get_option("theme.base") == "dark" else 'white'
+        selected_color = st.selectbox("일본어",
                                     options=list(COLOR_MAPPING.keys()),
                                     index=list(COLOR_MAPPING.keys()).index(default_color),
                                     key="japanese_color_select")
         settings['japanese_color'] = COLOR_MAPPING[selected_color]
+
+    with col5:
+        default_color = 'green' if st.get_option("theme.base") == "dark" else 'white'
+        selected_color = st.selectbox("베트남어",
+                                      options=list(COLOR_MAPPING.keys()),
+                                      index=list(COLOR_MAPPING.keys()).index(default_color),
+                                      key="vietnamese_color_select")
+        settings['vietnamese_color'] = COLOR_MAPPING[selected_color]
 
     # 폰트 크기 변경 시 즉시 반영을 위한 CSS 업데이트
     st.markdown(f"""
@@ -642,6 +672,7 @@ def create_settings_ui():
         'kor_voice': settings['kor_voice'],
         'zh_voice': settings['zh_voice'],
         'jp_voice': settings['jp_voice'],
+        'vi_voice': settings.get('vi_voice', 'vi-VN'),  # 기본값 사용
         'spacing': spacing,
         'subtitle_delay': subtitle_delay,
         'keep_subtitles': settings['keep_subtitles'],
@@ -664,6 +695,10 @@ def create_settings_ui():
         'english_speed': settings['english_speed'],
         'korean_speed': settings['korean_speed'],
         'chinese_speed': settings['chinese_speed'],
+        'vietnamese_speed': settings['vietnamese_speed'],
+        'vietnamese_font': 'Arial',  # 베트남어 폰트 설정 추가
+        'vietnamese_font_size': settings.get('vietnamese_font_size', 28),
+        'vietnamese_color': settings['vietnamese_color'],
         'start_row': settings['start_row'],
         'end_row': settings['end_row']
     })
@@ -678,6 +713,32 @@ def create_settings_ui():
             font-family: 'PretendardJP-Light';
             src: url('{str(SCRIPT_DIR / "base/PretendardJP-Light.otf")}') format('opentype');
         }}
+        </style>
+    """, unsafe_allow_html=True)
+
+    # CSS에 베트남어 폰트 추가
+    st.markdown(f"""
+        <style>
+        @font-face {{
+            font-family: 'PretendardJP-Light';
+            src: url('{str(SCRIPT_DIR / "base/PretendardJP-Light.otf")}') format('opentype');
+        }}
+        /* 베트남어 폰트 설정 */
+        .vietnamese-text {{
+            font-family: Arial, sans-serif !important;
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+
+    # CSS 스타일 업데이트
+    st.markdown(f"""
+        <style>
+            .japanese-text {{
+                color: {settings['japanese_color']} !important;
+            }}
+            .vietnamese-text {{
+                color: {settings['vietnamese_color']} !important;
+            }}
         </style>
     """, unsafe_allow_html=True)
 
@@ -723,20 +784,53 @@ async def create_audio(text, voice, speed=1.0):
         if not text or not voice:
             return None
 
-        # 임시 파일 이름 생성 (타임스탬프 추가)
+        # 임시 파일 이름 생성
         output_file = TEMP_DIR / f"temp_{int(time.time()*1000)}.wav"
 
-        # 배속 계산
-        if speed > 1:
-            rate_str = f"+{int((speed - 1) * 100)}%"
+        # 베트남어인 경우 gTTS 사용
+        if voice == 'vi-VN':
+            from gtts import gTTS
+            temp_mp3 = TEMP_DIR / f"temp_{int(time.time()*1000)}.mp3"
+            tts = gTTS(text=text, lang='vi')
+            tts.save(str(temp_mp3))
+            
+            # 속도 조절을 위한 ffmpeg 필터 설정
+            speed = float(speed)
+            if speed > 2.0:
+                filter_str = f"atempo=2.0,atempo={speed/2.0}"
+            else:
+                filter_str = f"atempo={speed}"
+            
+            # ffmpeg로 속도 조절 및 wav 변환
+            try:
+                subprocess.run([
+                    'ffmpeg', '-y',
+                    '-i', str(temp_mp3),
+                    '-filter:a', filter_str,
+                    '-acodec', 'pcm_s16le',
+                    '-ar', '44100',
+                    '-ac', '2',
+                    str(output_file)
+                ], check=True, capture_output=True, text=True)
+                
+                # 임시 mp3 파일 삭제
+                os.remove(temp_mp3)
+                return str(output_file)
+                
+            except subprocess.CalledProcessError as e:
+                st.error(f"FFmpeg 오류: {e.stderr}")
+                return None
+                
         else:
-            rate_str = f"-{int((1 - speed) * 100)}%"
+            # edge-tts 사용 (기존 로직)
+            if speed > 1:
+                rate_str = f"+{int((speed - 1) * 100)}%"
+            else:
+                rate_str = f"-{int((1 - speed) * 100)}%"
 
-        # 음성 생성
-        communicate = edge_tts.Communicate(text, voice, rate=rate_str)
-        await communicate.save(str(output_file))
-        
-        # 파일 생성 확인
+            communicate = edge_tts.Communicate(text, voice, rate=rate_str)
+            await communicate.save(str(output_file))
+
         if output_file.exists() and output_file.stat().st_size > 0:
             return str(output_file)
         else:
@@ -745,6 +839,7 @@ async def create_audio(text, voice, speed=1.0):
 
     except Exception as e:
         st.error(f"음성 생성 오류: {e}")
+        traceback.print_exc()
         return None
 
 def create_learning_ui():
@@ -769,6 +864,16 @@ def create_learning_ui():
         eng_speed = st.session_state.settings['english_speed']
         eng_speed_text = str(int(eng_speed)) if eng_speed.is_integer() else f"{eng_speed:.1f}"
         speed_info.append(f"영어 {eng_speed_text}배")
+        
+        # 중국어 배속 정보
+        zh_speed = st.session_state.settings['chinese_speed']
+        zh_speed_text = str(int(zh_speed)) if zh_speed.is_integer() else f"{zh_speed:.1f}"
+        speed_info.append(f"중국어 {zh_speed_text}배")
+        
+        # 베트남어 배속 정보
+        vn_speed = st.session_state.settings['vietnamese_speed']
+        vn_speed_text = str(int(vn_speed)) if vn_speed.is_integer() else f"{vn_speed:.1f}"
+        speed_info.append(f"베트남어 {vn_speed_text}배")
         
         # 배속 정보를 하나의 문자열로 결합
         speed_display = " | ".join(speed_info)
@@ -806,7 +911,8 @@ async def start_learning():
         english = selected_data.iloc[:, 0].tolist()
         korean = selected_data.iloc[:, 1].tolist()
         chinese = selected_data.iloc[:, 2].tolist()
-        japanese = df.iloc[start_idx:end_idx+1, 4].tolist()  # E열(인덱스 4)에서 일본어 읽기
+        japanese = df.iloc[start_idx:end_idx+1, 4].tolist()  # E열에서 일본어 읽기
+        vietnamese = df.iloc[start_idx:end_idx+1, 3].tolist()  # D열에서 베트남어 읽기
         total_sentences = len(english)
         
     except PermissionError:
@@ -817,8 +923,7 @@ async def start_learning():
         return
 
     # 학습 UI 생성
-    progress = st.progress(0)
-    status = st.empty()
+    progress, status, subtitles = create_learning_ui()
     
     # 상단 컨트롤 패널 - 학습 시작 버튼과 동일한 레이아웃 사용
     col1, col2 = st.columns([0.7, 0.3])
@@ -887,17 +992,14 @@ async def start_learning():
     prev_subtitles = {'second': None, 'third': None}
 
     while True:
-        for i, (eng, kor, chn, jpn) in enumerate(zip(english, korean, chinese, japanese)):
+        for i, (eng, kor, chn, jpn, vn) in enumerate(zip(english, korean, chinese, japanese, vietnamese)):
             # 언어별 텍스트와 음성 매핑
             lang_mapping = {
                 'korean': {'text': kor, 'voice': VOICE_MAPPING['korean'][settings['kor_voice']], 'speed': settings['korean_speed']},
                 'english': {'text': eng, 'voice': VOICE_MAPPING['english'][settings['eng_voice']], 'speed': settings['english_speed']},
                 'chinese': {'text': chn, 'voice': VOICE_MAPPING['chinese'][settings['zh_voice']], 'speed': settings['chinese_speed']},
-                'japanese': {
-                    'text': jpn, 
-                    'voice': VOICE_MAPPING['japanese'][settings['jp_voice']], 
-                    'speed': settings['japanese_speed']
-                }
+                'japanese': {'text': jpn, 'voice': VOICE_MAPPING['japanese'][settings['jp_voice']], 'speed': settings['japanese_speed']},
+                'vietnamese': {'text': vn, 'voice': VOICE_MAPPING['vietnamese']['vi-VN'], 'speed': settings['vietnamese_speed']}
             }
 
             progress.progress((i + 1) / total_sentences)
@@ -919,6 +1021,10 @@ async def start_learning():
                     zh_speed = settings['chinese_speed']
                     zh_speed_text = str(int(zh_speed)) if zh_speed.is_integer() else f"{zh_speed:.1f}"
                     speed_info.append(f"중국어 {zh_speed_text}배")
+                elif lang == 'vietnamese' and settings['third_repeat'] > 0:  # 베트남어 추가
+                    vn_speed = settings['vietnamese_speed']
+                    vn_speed_text = str(int(vn_speed)) if vn_speed.is_integer() else f"{vn_speed:.1f}"
+                    speed_info.append(f"베트남어 {vn_speed_text}배")
             
             # 배속 정보를 하나의 문자열로 결합
             speed_display = " | ".join(speed_info)
@@ -967,6 +1073,9 @@ async def start_learning():
                     .japanese-text {{
                         color: {settings['japanese_color']} !important;
                     }}
+                    .vietnamese-text {{
+                        color: {settings['vietnamese_color']} !important;
+                    }}
                 </style>
             """, unsafe_allow_html=True)
 
@@ -978,9 +1087,9 @@ async def start_learning():
             ]):
                 if not settings['hide_subtitles'][f'{["first", "second", "third"][rank]}_lang']:
                     text = lang_mapping[lang]['text']
-                    font = settings[f'{lang}_font']
-                    color = settings[f'{lang}_color']
-                    size = settings[f'{lang}_font_size']
+                    font = settings.get(f'{lang}_font', 'Arial')
+                    color = settings.get(f'{lang}_color', '#00FF00')
+                    size = settings.get(f'{lang}_font_size', 28)
                     
                     subtitles[rank].markdown(
                         f'<div class="{lang}-text" style="font-family: {font}; '
@@ -1082,8 +1191,8 @@ def create_personalized_ui():
     # 언어 선택
     selected_language = st.selectbox(
         "사용할 언어를 선택하세요",
-        options=['korean', 'english', 'chinese', 'japanese'],
-        index=['korean', 'english', 'chinese', 'japanese'].index(st.session_state.user_language)
+        options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
+        index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(st.session_state.user_language)
     )
 
     # 선택한 언어를 세션 상태에 저장
@@ -1100,6 +1209,8 @@ def create_personalized_ui():
         st.write("你好！这是用中文显示的。")
     elif st.session_state.user_language == 'japanese':
         st.write("こんにちは！これは日本語で表示されます。")
+    elif st.session_state.user_language == 'vietnamese':
+        st.write("Xin chào! Đây là dòng chữ tiếng Việt.")
 
 def main():
     # 세션 상태 초기화
