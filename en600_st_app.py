@@ -733,7 +733,9 @@ def create_settings_ui(return_to_learning=False):
         """, unsafe_allow_html=True)
 
 async def create_audio(text, voice, speed=1.0):
-    """음성 파일 생성 (pydub 사용, ffmpeg 불필요)"""
+    """
+    음성 파일 생성 (gTTS + HTML/JS for Vietnamese, edge-tts for others)
+    """
     try:
         if not text or not voice:
             return None
@@ -741,32 +743,38 @@ async def create_audio(text, voice, speed=1.0):
         output_file = TEMP_DIR / f"temp_{int(time.time()*1000)}.wav"
 
         if voice == 'vi-VN':
+            # 베트남어는 gTTS를 직접 사용, 속도 조절은 HTML/JS로
             try:
-                # gTTS를 사용하여 MP3 파일 생성
                 tts = gTTS(text=text, lang='vi')
                 temp_mp3 = TEMP_DIR / f"temp_{int(time.time() * 1000)}.mp3"
                 tts.save(str(temp_mp3))
 
-                # pydub를 사용하여 MP3 로드
-                audio = AudioSegment.from_mp3(str(temp_mp3))
+                # base64 인코딩
+                with open(temp_mp3, 'rb') as f:
+                    audio_bytes = f.read()
+                audio_base64 = base64.b64encode(audio_bytes).decode()
 
-                # 속도 조절 (speedup 함수 사용)
-                if speed != 1.0:
-                    audio = audio.speedup(playback_speed=speed)
-
-                # WAV로 저장 (pydub 사용)
-                audio.export(str(output_file), format="wav")
+                # HTML audio 태그와 JavaScript로 속도 조절
+                st.markdown(f"""
+                    <audio id="audio-{text}" autoplay style="display: none">
+                        <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+                    </audio>
+                    <script>
+                        var audio = document.getElementById('audio-{text}');
+                        audio.playbackRate = {speed};
+                    </script>
+                """, unsafe_allow_html=True)
 
                 # 임시 MP3 파일 삭제
                 os.remove(temp_mp3)
-                return str(output_file)
+                return None  # HTML/JS로 재생하므로 None 반환
 
             except Exception as e:
                 st.error(f"베트남어 음성 생성 오류: {e}")
                 traceback.print_exc()
                 return None
         else:
-            # edge-tts 사용 (기존 로직)
+             # edge-tts 사용 (기존 로직)
             if speed > 1:
                 rate_str = f"+{int((speed - 1) * 100)}%"
             else:
@@ -1001,8 +1009,19 @@ async def start_learning():
                         lang_mapping[lang]['speed']
                     )
                     if audio_file:
-                        # 모든 언어에 대해 play_audio 사용
+                        # edge-tts로 생성된 파일은 play_audio로 재생
                         play_audio(audio_file)
+                        if _ < repeat - 1:
+                            await asyncio.sleep(settings['spacing'])
+                    elif lang == 'vietnamese':
+                        # 베트남어는 create_audio에서 HTML/JS로 바로 재생되므로,
+                        # 여기서는 아무것도 하지 않음
+                        duration = len(lang_mapping[lang]['text']) * 0.1  # 대략적인 시간
+                        await asyncio.sleep(duration)
+                        if _ < repeat - 1:
+                            await asyncio.sleep(settings['spacing'])
+
+                    else:
                         if _ < repeat - 1:
                             await asyncio.sleep(settings['spacing'])
 
@@ -1142,13 +1161,15 @@ def get_setting(key, default_value):
     return st.session_state.settings.get(key, default_value)
 
 def play_audio(file_path):
-    """음성 파일 재생"""
+    """
+    음성 파일 재생 (edge-tts 전용, 베트남어는 HTML/JS로 재생)
+    """
     try:
         if not file_path or not os.path.exists(file_path):
             st.error(f"파일 경로 오류: {file_path}")
             return
 
-        # soundfile로 파일 길이 계산
+        # soundfile로 파일 길이 계산 (edge-tts만 해당)
         data, samplerate = sf.read(file_path)
         duration = len(data) / samplerate
 
