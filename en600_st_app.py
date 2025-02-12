@@ -794,33 +794,22 @@ async def create_audio(text, voice, speed=1.0):
             tts = gTTS(text=text, lang='vi')
             tts.save(str(temp_mp3))
             
-            # 속도 조절을 위한 ffmpeg 필터 설정
-            speed = float(speed)
-            if speed > 2.0:
-                filter_str = f"atempo=2.0,atempo={speed/2.0}"
-            else:
-                filter_str = f"atempo={speed}"
-            
-            # ffmpeg로 속도 조절 및 wav 변환
+            # MP3를 WAV로 변환
             try:
                 subprocess.run([
                     'ffmpeg', '-y',
                     '-i', str(temp_mp3),
-                    '-filter:a', filter_str,
                     '-acodec', 'pcm_s16le',
                     '-ar', '44100',
                     '-ac', '2',
                     str(output_file)
                 ], check=True, capture_output=True, text=True)
                 
-                # 임시 mp3 파일 삭제
+                # 임시 MP3 파일 삭제
                 os.remove(temp_mp3)
-                return str(output_file)
-                
             except subprocess.CalledProcessError as e:
                 st.error(f"FFmpeg 오류: {e.stderr}")
                 return None
-                
         else:
             # edge-tts 사용 (기존 로직)
             if speed > 1:
