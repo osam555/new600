@@ -16,7 +16,7 @@ import json
 import base64
 from gtts import gTTS
 
-## streamlit run word_memory/en600_st_app.py
+## streamlit run en600st/en600_st_app.py
 
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -129,34 +129,43 @@ def initialize_session_state():
         TEMP_DIR.mkdir(parents=True)
     
     if 'settings' not in st.session_state:
-        # 저장된 설정 파일이 있으면 로드
+        # 설정 파일이 있으면서 필수 키가 모두 있는지 확인
+        required_keys = {'jp_voice', 'vi_voice', 'japanese_speed', 'vietnamese_speed'}
         try:
             if SETTINGS_PATH.exists():
                 with open(SETTINGS_PATH, 'r', encoding='utf-8') as f:
                     saved_settings = json.load(f)
-                    # 테마에 따라 색상 업데이트
-                    if is_dark_mode:
-                        saved_settings.update({
-                            'english_color': '#00FF00',   # 초록색으로 변경
-                            'korean_color': '#00FF00',   # 초록색으로 변경
-                            'chinese_color': '#00FF00',  # 초록색으로 변경
-                            'japanese_color': '#00FF00', # 초록색으로 변경
-                            'vietnamese_color': '#00FF00', # 초록색으로 변경
-                        })
+                    # 필수 키가 모두 있는지 확인
+                    if all(key in saved_settings for key in required_keys):
+                        # 테마에 따라 색상 업데이트
+                        if is_dark_mode:
+                            saved_settings.update({
+                                'english_color': '#00FF00',
+                                'korean_color': '#00FF00',
+                                'chinese_color': '#00FF00',
+                                'japanese_color': '#00FF00',
+                                'vietnamese_color': '#00FF00',
+                            })
+                        else:
+                            saved_settings.update({
+                                'english_color': '#000000',
+                                'korean_color': '#000000',
+                                'chinese_color': '#000000',
+                                'japanese_color': '#FFFFFF',
+                                'vietnamese_color': '#FFFFFF',
+                            })
+                        st.session_state.settings = saved_settings
+                        return
                     else:
-                        saved_settings.update({
-                            'english_color': '#000000',   # 검정색
-                            'korean_color': '#000000',    # 검정색
-                            'chinese_color': '#000000',   # 검정색
-                            'japanese_color': '#FFFFFF',
-                            'vietnamese_color': '#FFFFFF',
-                        })
-                    st.session_state.settings = saved_settings
-                    return
+                        # 필수 키가 없으면 설정 파일 삭제
+                        os.remove(SETTINGS_PATH)
         except Exception as e:
             st.error(f"설정 파일 로드 중 오류: {e}")
+            # 오류 발생 시 설정 파일 삭제
+            if SETTINGS_PATH.exists():
+                os.remove(SETTINGS_PATH)
         
-        # 저장된 설정이 없으면 기본값 사용
+        # 저장된 설정이 없거나 유효하지 않으면 기본값 사용
         st.session_state.settings = {
             'first_lang': 'korean',
             'second_lang': 'english',
@@ -167,8 +176,8 @@ def initialize_session_state():
             'eng_voice': 'Steffan',
             'kor_voice': '선희',
             'zh_voice': 'Yunjian',
-            'jp_voice': 'Nanami',  # 일본어 기본 음성 추가
-            'vi_voice': 'vi-VN',   # 베트남어 기본 음성 추가
+            'jp_voice': 'Nanami',  # 일본어 기본 음성
+            'vi_voice': 'vi-VN',   # 베트남어 기본 음성
             'start_row': 301,
             'end_row': 350,
             'word_delay': 0.5,
