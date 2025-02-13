@@ -67,7 +67,8 @@ VOICE_MAPPING = {
         "Keita": "ja-JP-KeitaNeural",
     },
     'vietnamese': {
-        'vi-VN': 'vi-VN'  # gTTS용 베트남어 음성
+        "HoaiMy": "vi-VN-HoaiMyNeural",  # 여성 음성
+        "NamMinh": "vi-VN-NamMinhNeural"  # 남성 음성
     }
 }
 
@@ -178,7 +179,7 @@ def initialize_session_state():
             'kor_voice': '선희',
             'zh_voice': 'Yunjian',
             'jp_voice': 'Nanami',
-            'vi_voice': 'vi-VN',
+            'vi_voice': 'HoaiMy',
             'start_row': 1,
             'end_row': 50,
             'word_delay': 1,
@@ -471,7 +472,7 @@ def create_settings_ui(return_to_learning=False):
             # 음성 재생 횟수를 선택박스로 변경
             current_repeat = max(1, min(settings.get('first_repeat', 1), 5))  # 1-5 사이로 제한
             settings['first_repeat'] = st.selectbox("음성 재생(횟수)",
-                                      options=list(range(1, 6)),  # 1-5회
+                                      options=list(range(0, 6)),  # 1-5회
                                       index=current_repeat-1,  # 0-based index
                                       key="first_repeat")
             # 배속을 선택박스로 변경 (0.7부터 시작)
@@ -497,7 +498,7 @@ def create_settings_ui(return_to_learning=False):
             # 음성 재생 횟수를 선택박스로 변경
             current_repeat = max(1, min(settings.get('second_repeat', 1), 5))  # 1-5 사이로 제한
             settings['second_repeat'] = st.selectbox("음성 재생(횟수)",
-                                       options=list(range(1, 6)),  # 1-5회
+                                       options=list(range(0, 6)),  # 1-5회
                                        index=current_repeat-1,  # 0-based index
                                        key="second_repeat")
             # 배속을 선택박스로 변경
@@ -522,7 +523,7 @@ def create_settings_ui(return_to_learning=False):
             # 음성 재생 횟수를 선택박스로 변경
             current_repeat = max(1, min(settings.get('third_repeat', 1), 5))  # 1-5 사이로 제한
             settings['third_repeat'] = st.selectbox("음성 재생(횟수)",
-                                      options=list(range(1, 6)),  # 1-5회
+                                      options=list(range(0, 6)),  # 1-5회
                                       index=current_repeat-1,  # 0-based index
                                       key="third_repeat")
             # 배속을 선택박스로 변경
