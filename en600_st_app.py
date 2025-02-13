@@ -452,11 +452,11 @@ def create_settings_ui(return_to_learning=False):
                                       options=list(range(0, 3)),  # 1-5회
                                       index=current_repeat-1,  # 0-based index
                                       key="first_repeat")
-            # 배속을 선택박스로 변경 (0.7부터 시작)
-            speed_options = [round(x * 0.2, 1) for x in range(4, 25)]  # 0.7-5.0배, 0.2간격
+            # 배속을 선택박스로 변경 (0.8부터 시작)
+            speed_options = [round(x * 0.2, 1) for x in range(4, 21)]  # 0.8-4.0배, 0.2간격
             speed_key = f"{settings['first_lang']}_speed"
-            current_speed = round(float(settings.get(speed_key, 1.2)), 2)
-            current_speed = max(0.8, min(current_speed, 5.0))
+            current_speed = round(float(settings.get(speed_key, 1.2)), 1)
+            current_speed = max(0.8, min(current_speed, 4.0))
             try:
                 speed_index = speed_options.index(current_speed)
             except ValueError:
@@ -480,8 +480,8 @@ def create_settings_ui(return_to_learning=False):
                                        key="second_repeat")
             # 배속을 선택박스로 변경
             speed_key = f"{settings['second_lang']}_speed"
-            current_speed = round(float(settings.get(speed_key, 1.2)), 2)
-            current_speed = max(0.8, min(current_speed, 5.0))
+            current_speed = round(float(settings.get(speed_key, 1.2)), 1)
+            current_speed = max(0.8, min(current_speed, 4.0))
             try:
                 speed_index = speed_options.index(current_speed)
             except ValueError:
@@ -505,8 +505,8 @@ def create_settings_ui(return_to_learning=False):
                                       key="third_repeat")
             # 배속을 선택박스로 변경
             speed_key = f"{settings['third_lang']}_speed"
-            current_speed = round(float(settings.get(speed_key, 1.2)), 2)
-            current_speed = max(0.8, min(current_speed, 5.0))
+            current_speed = round(float(settings.get(speed_key, 1.2)), 1)
+            current_speed = max(0.8, min(current_speed, 4.0))
             try:
                 speed_index = speed_options.index(current_speed)
             except ValueError:
