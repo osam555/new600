@@ -852,13 +852,20 @@ async def start_learning():
         )
         start_idx = settings['start_row'] - 1
         end_idx = settings['end_row'] - 1
-        selected_data = df.iloc[start_idx:end_idx+1, :3]
         
-        english = selected_data.iloc[:, 0].tolist()
-        korean = selected_data.iloc[:, 1].tolist()
-        chinese = selected_data.iloc[:, 2].tolist()
-        vietnamese = selected_data.iloc[:, 3].tolist()
-        japanese = df.iloc[start_idx:end_idx+1, 4].tolist()  # E열에서 일본어 읽기
+        # 필요한 열만 선택 (존재하는 열만)
+        english = df.iloc[start_idx:end_idx+1, 0].tolist()  # A열: 영어
+        korean = df.iloc[start_idx:end_idx+1, 1].tolist()   # B열: 한국어
+        chinese = df.iloc[start_idx:end_idx+1, 2].tolist()  # C열: 중국어
+        japanese = df.iloc[start_idx:end_idx+1, 3].tolist() # D열: 일본어
+        
+        # 베트남어 열이 있는 경우에만 읽기
+        vietnamese = []
+        if len(df.columns) > 4:  # E열이 존재하는 경우
+            vietnamese = df.iloc[start_idx:end_idx+1, 4].tolist()
+        else:
+            vietnamese = [""] * (end_idx - start_idx + 1)  # 빈 문자열로 채우기
+        
         total_sentences = len(english)
         
     except PermissionError:
