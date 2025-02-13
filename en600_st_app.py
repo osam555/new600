@@ -232,6 +232,13 @@ def initialize_session_state():
         except Exception as e:
             st.error(f"알림음 생성 오류: {e}")
 
+    # 베트남어 음성 설정 확실히 초기화
+    if 'vi_voice' not in st.session_state.settings:
+        st.session_state.settings['vi_voice'] = 'HoaiMy'
+    
+    # 설정 저장
+    save_settings(st.session_state.settings)
+
 def create_settings_ui(return_to_learning=False):
     """설정 화면 UI 생성 (return_to_learning: 학습 화면으로 복귀 여부)"""
     settings = st.session_state.settings
