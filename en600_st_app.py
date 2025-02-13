@@ -437,11 +437,11 @@ def create_settings_ui(return_to_learning=False):
             if settings['auto_repeat']:
                 settings['repeat_count'] = int(settings['repeat_count'])
 
-        # 언어 순서 설정
+        # 언어 순위 설정
         st.subheader("자막 | 음성 | 속도")
         col1, col2, col3 = st.columns(3)
         with col1:
-            settings['first_lang'] = st.selectbox("1순위 언어",
+            settings['first_lang'] = st.selectbox("1번째     언어",
                 options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
                 index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(settings['first_lang']),
                 format_func=lambda x: LANG_DISPLAY[x],
@@ -467,7 +467,7 @@ def create_settings_ui(return_to_learning=False):
                                      key="first_speed")
 
         with col2:
-            settings['second_lang'] = st.selectbox("2순위 언어",
+            settings['second_lang'] = st.selectbox("2번째 언어",
                 options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
                 index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(settings['second_lang']),
                 format_func=lambda x: LANG_DISPLAY[x],
@@ -492,7 +492,7 @@ def create_settings_ui(return_to_learning=False):
                                       key="second_speed")
 
         with col3:
-            settings['third_lang'] = st.selectbox("3순위 언어",
+            settings['third_lang'] = st.selectbox("3번째 언어",
                 options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
                 index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(settings['third_lang']),
                 format_func=lambda x: LANG_DISPLAY[x],
@@ -576,15 +576,15 @@ def create_settings_ui(return_to_learning=False):
                                                   value=settings.get('keep_subtitles', True),
                                                   key="keep_subtitles_checkbox")
         with col2:
-            hide_first = st.checkbox("1순위 자막 숨김",
+            hide_first = st.checkbox("1번째 자막 숨김",
                                    value=settings['hide_subtitles']['first_lang'],
                                    key="first_hide")
         with col3:
-            hide_second = st.checkbox("2순위 자막 숨김",
+            hide_second = st.checkbox("2번째 자막 숨김",
                                     value=settings['hide_subtitles']['second_lang'],
                                     key="second_hide")
         with col4:
-            hide_third = st.checkbox("3순위 자막 숨김",
+            hide_third = st.checkbox("3번째 자막 숨김",
                                    value=settings['hide_subtitles']['third_lang'],
                                    key="third_hide")
 
@@ -831,7 +831,7 @@ def create_learning_ui():
 
 async def create_break_audio():
     """브레이크 음성 생성"""
-    break_msg = "쉬는 시간입니다, 5초간의 여유를 느껴보세요"
+    break_msg = "쉬어가는 시간입니다, 5초간의 호흡을 느껴보세요"
     break_voice = VOICE_MAPPING['korean']['선희']
     audio_file = await create_audio(break_msg, break_voice, 1.0)
     return audio_file
@@ -857,8 +857,8 @@ async def start_learning():
         english = selected_data.iloc[:, 0].tolist()
         korean = selected_data.iloc[:, 1].tolist()
         chinese = selected_data.iloc[:, 2].tolist()
+        vietnamese = selected_data.iloc[:, 3].tolist()
         japanese = df.iloc[start_idx:end_idx+1, 4].tolist()  # E열에서 일본어 읽기
-        vietnamese = df.iloc[start_idx:end_idx+1, 3].tolist()  # D열에서 베트남어 읽기
         total_sentences = len(english)
         
     except PermissionError:
@@ -1050,7 +1050,7 @@ async def start_learning():
                         await asyncio.sleep(1)  # 알림음이 완전히 재생될 때까지 대기
                     
                     # 2. 브레이크 음성 메시지 생성 및 재생
-                    break_msg = "쉬는 시간입니다, 5초간의 휴식을 느껴보세요"
+                    break_msg = "쉬어가는 시간입니다, 5초간의 호흡을 느껴보세요"
                     break_audio = await create_audio(break_msg, VOICE_MAPPING['korean']['선희'], 1.0)
                     if break_audio:
                         play_audio(break_audio)
