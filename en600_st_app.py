@@ -93,8 +93,69 @@ def initialize_session_state():
         st.session_state.clear()
         st.session_state.initialized = True
         st.session_state.page = 'settings'
-    if 'user_language' not in st.session_state:
-        st.session_state.user_language = 'korean'  # 기본값 설정
+        
+    # 기본 설정값 정의
+    default_settings = {
+        'first_lang': 'korean',
+        'second_lang': 'english',
+        'third_lang': 'chinese',
+        'first_repeat': 0,
+        'second_repeat': 1,
+        'third_repeat': 1,  
+        'eng_voice': 'Steffan',
+        'kor_voice': '선희',
+        'zh_voice': 'Yunjian',
+        'jp_voice': 'Nanami',
+        'vi_voice': 'HoaiMy',
+        'start_row': 1,
+        'end_row': 50,
+        'word_delay': 1,
+        'spacing': 1.0,          # 기본값 1.0으로 명시
+        'subtitle_delay': 1.0,   # 기본값 1.0으로 명시
+        'next_sentence_time': 1.0,  # 기본값 1.0으로 명시
+        'english_speed': 1.2,
+        'korean_speed': 1.2,
+        'chinese_speed': 1.2,
+        'japanese_speed': 1.2,
+        'vietnamese_speed': 1.2,
+        'keep_subtitles': True,
+        'break_enabled': True,
+        'break_interval': 10,
+        'break_duration': 10,
+        'auto_repeat': True,
+        'repeat_count': 5,  # 기본 반복 횟수 추가
+        'english_font': 'Pretendard',
+        'korean_font': 'Pretendard',
+        'chinese_font': 'SimSun',
+        'english_font_size': 32,
+        'korean_font_size': 25,
+        'chinese_font_size': 32,
+        'japanese_font': 'PretendardJP-Light',
+        'japanese_font_size': 28,
+        'hide_subtitles': {
+            'first_lang': False,
+            'second_lang': False,
+            'third_lang': False,
+        },
+        'english_color': '#00FF00',  # 다크모드: 초록색, 브라이트모드: 검정색
+        'korean_color': '#00FF00',   # 다크모드: 초록색, 브라이트모드: 검정색
+        'chinese_color': '#00FF00',  # 다크모드: 초록색, 브라이트모드: 검정색
+        'japanese_color': '#00FF00' if st.get_option("theme.base") == "dark" else '#FFFFFF',  # 다크모드: 초록색, 라이트모드: 흰색
+        'vietnamese_color': '#00FF00' if st.get_option("theme.base") == "dark" else '#FFFFFF',  # 다크모드: 초록색, 라이트모드: 흰색
+        'japanese_speed': 2.0,  # 일본어 배속 기본값 추가
+        'vietnamese_font': 'Arial',  # 베트남어 폰트 기본값 추가
+        'vietnamese_font_size': 30,
+        'vietnamese_speed': 1.0,
+    }
+    
+    # 설정이 없는 경우 기본값으로 초기화
+    if 'settings' not in st.session_state:
+        st.session_state.settings = default_settings
+    else:
+        # 기존 설정에 누락된 값이 있으면 기본값으로 보완
+        for key, value in default_settings.items():
+            if key not in st.session_state.settings:
+                st.session_state.settings[key] = value
 
     # 학습 시간 관련 변수 초기화
     if 'start_time' not in st.session_state:
@@ -130,97 +191,6 @@ def initialize_session_state():
     if not TEMP_DIR.exists():
         TEMP_DIR.mkdir(parents=True)
     
-    if 'settings' not in st.session_state:
-        # 설정 파일이 있으면서 필수 키가 모두 있는지 확인
-        required_keys = {'jp_voice', 'vi_voice', 'japanese_speed', 'vietnamese_speed'}
-        try:
-            if SETTINGS_PATH.exists():
-                with open(SETTINGS_PATH, 'r', encoding='utf-8') as f:
-                    saved_settings = json.load(f)
-                    # 필수 키가 모두 있는지 확인
-                    if all(key in saved_settings for key in required_keys):
-                        # 테마에 따라 색상 업데이트
-                        if is_dark_mode:
-                            saved_settings.update({
-                                'english_color': '#00FF00',
-                                'korean_color': '#00FF00',
-                                'chinese_color': '#00FF00',
-                                'japanese_color': '#00FF00',
-                                'vietnamese_color': '#00FF00',
-                            })
-                        else:
-                            saved_settings.update({
-                                'english_color': '#000000',
-                                'korean_color': '#000000',
-                                'chinese_color': '#000000',
-                                'japanese_color': '#FFFFFF',
-                                'vietnamese_color': '#FFFFFF',
-                            })
-                        st.session_state.settings = saved_settings
-                        return
-                    else:
-                        # 필수 키가 없으면 설정 파일 삭제
-                        os.remove(SETTINGS_PATH)
-        except Exception as e:
-            st.error(f"설정 파일 로드 중 오류: {e}")
-            # 오류 발생 시 설정 파일 삭제
-            if SETTINGS_PATH.exists():
-                os.remove(SETTINGS_PATH)
-        
-        # 저장된 설정이 없거나 유효하지 않으면 기본값 사용
-        st.session_state.settings = {
-            'first_lang': 'korean',
-            'second_lang': 'english',
-            'third_lang': 'chinese',
-            'first_repeat': 0,
-            'second_repeat': 1,
-            'third_repeat': 1,  
-            'eng_voice': 'Steffan',
-            'kor_voice': '선희',
-            'zh_voice': 'Yunjian',
-            'jp_voice': 'Nanami',
-            'vi_voice': 'HoaiMy',
-            'start_row': 1,
-            'end_row': 50,
-            'word_delay': 1,
-            'spacing': 1.0,          # 기본값 1.0으로 명시
-            'subtitle_delay': 1.0,   # 기본값 1.0으로 명시
-            'next_sentence_time': 1.0,  # 기본값 1.0으로 명시
-            'english_speed': 1.2,
-            'korean_speed': 1.2,
-            'chinese_speed': 1.2,
-            'japanese_speed': 1.2,
-            'vietnamese_speed': 1.2,
-            'keep_subtitles': True,
-            'break_enabled': True,
-            'break_interval': 10,
-            'break_duration': 10,
-            'auto_repeat': True,
-            'repeat_count': 5,  # 기본 반복 횟수 추가
-            'english_font': 'Pretendard',
-            'korean_font': 'Pretendard',
-            'chinese_font': 'SimSun',
-            'english_font_size': 32,
-            'korean_font_size': 25,
-            'chinese_font_size': 32,
-            'japanese_font': 'PretendardJP-Light',
-            'japanese_font_size': 28,
-            'hide_subtitles': {
-                'first_lang': False,
-                'second_lang': False,
-                'third_lang': False,
-            },
-            'english_color': '#00FF00',  # 다크모드: 초록색, 브라이트모드: 검정색
-            'korean_color': '#00FF00',   # 다크모드: 초록색, 브라이트모드: 검정색
-            'chinese_color': '#00FF00',  # 다크모드: 초록색, 브라이트모드: 검정색
-            'japanese_color': '#00FF00' if is_dark_mode else '#FFFFFF',  # 다크모드: 초록색, 라이트모드: 흰색
-            'vietnamese_color': '#00FF00' if is_dark_mode else '#FFFFFF',  # 다크모드: 초록색, 라이트모드: 흰색
-            'japanese_speed': 2.0,  # 일본어 배속 기본값 추가
-            'vietnamese_font': 'Arial',  # 베트남어 폰트 기본값 추가
-            'vietnamese_font_size': 30,
-            'vietnamese_speed': 1.0,
-        }
-
     # break.wav 파일 존재 여부 확인
     break_sound_path = SCRIPT_DIR / './base/break.wav'
     if not break_sound_path.exists():
@@ -479,7 +449,7 @@ def create_settings_ui(return_to_learning=False):
             # 음성 재생 횟수를 선택박스로 변경
             current_repeat = max(1, min(settings.get('first_repeat', 1), 5))  # 1-5 사이로 제한
             settings['first_repeat'] = st.selectbox("음성 재생(횟수)",
-                                      options=list(range(0, 6)),  # 1-5회
+                                      options=list(range(0, 3)),  # 1-5회
                                       index=current_repeat-1,  # 0-based index
                                       key="first_repeat")
             # 배속을 선택박스로 변경 (0.7부터 시작)
@@ -505,7 +475,7 @@ def create_settings_ui(return_to_learning=False):
             # 음성 재생 횟수를 선택박스로 변경
             current_repeat = max(1, min(settings.get('second_repeat', 1), 5))  # 1-5 사이로 제한
             settings['second_repeat'] = st.selectbox("음성 재생(횟수)",
-                                       options=list(range(0, 6)),  # 1-5회
+                                       options=list(range(1, 3)),  # 1-5회
                                        index=current_repeat-1,  # 0-based index
                                        key="second_repeat")
             # 배속을 선택박스로 변경
@@ -530,7 +500,7 @@ def create_settings_ui(return_to_learning=False):
             # 음성 재생 횟수를 선택박스로 변경
             current_repeat = max(1, min(settings.get('third_repeat', 1), 5))  # 1-5 사이로 제한
             settings['third_repeat'] = st.selectbox("음성 재생(횟수)",
-                                      options=list(range(0, 6)),  # 1-5회
+                                      options=list(range(1, 3)),  # 1-5회
                                       index=current_repeat-1,  # 0-based index
                                       key="third_repeat")
             # 배속을 선택박스로 변경
@@ -721,20 +691,20 @@ def create_settings_ui(return_to_learning=False):
         st.markdown("""
             <style>
                 /* 숫자 입력 필드 스타일 */
-                div[data-testid="stNumberInput"] {{
+                div[data-testid="stNumberInput"] {
                     max-width: 150px;
-                }}
+                }
                 
                 /* 숫자 입력 필드 레이블 스타일 */
-                div[data-testid="stNumberInput"] label {{
+                div[data-testid="stNumberInput"] label {
                     font-size: 15px !important;
-                }}
+                }
                 
                 /* 숫자 입력 필드 입력창 스타일 */
-                div[data-testid="stNumberInput"] input {{
+                div[data-testid="stNumberInput"] input {
                     font-size: 15px !important;
                     padding: 4px 8px !important;
-                }}
+                }
             </style>
         """, unsafe_allow_html=True)
 
@@ -791,38 +761,25 @@ def get_voice_mapping(language, voice_setting):
         return VOICE_MAPPING[language][default_voices[language]]
 
 async def create_audio(text, voice, speed=1.0):
-    """
-    음성 파일 생성 - 베트남어도 edge-tts 사용
-    """
+    """음성 파일 생성 함수 수정"""
     try:
         if not text or not voice:
             return None
 
-        # 베트남어도 edge-tts 사용
-        if voice == 'vi-VN':
-            voice = 'vi-VN-HoaiMyNeural'  # edge-tts의 베트남어 음성
-
         output_file = TEMP_DIR / f"temp_{int(time.time()*1000)}.wav"
-        try:
-            if speed > 1:
-                rate_str = f"+{int((speed - 1) * 100)}%"
-            else:
-                rate_str = f"-{int((1 - speed) * 100)}%"
+        
+        # 속도 설정을 percentage로 변환
+        if speed > 1:
+            rate_str = f"+{int((speed - 1) * 100)}%"
+        else:
+            rate_str = f"-{int((1 - speed) * 100)}%"
 
-            communicate = edge_tts.Communicate(text, voice, rate=rate_str)
-            await communicate.save(str(output_file))
-            return str(output_file)
-
-        except Exception as e:
-            st.error(f"음성 생성 오류: {str(e)}")
-            traceback.print_exc()
-            if output_file.exists():
-                output_file.unlink()
-            return None
+        communicate = edge_tts.Communicate(text, voice, rate=rate_str)
+        await communicate.save(str(output_file))
+        return str(output_file)
 
     except Exception as e:
         st.error(f"음성 생성 오류: {str(e)}")
-        traceback.print_exc()
         return None
 
 def create_learning_ui():
@@ -838,33 +795,39 @@ def create_learning_ui():
         # 배속 정보 표시
         speed_info = []
         
-        # 한글 배속 정보
-        ko_speed = st.session_state.settings['korean_speed']
-        ko_speed_text = str(int(ko_speed)) if ko_speed.is_integer() else f"{ko_speed:.1f}"
-        speed_info.append(f"한글 {ko_speed_text}배")
-        
-        # 영어 배속 정보
-        eng_speed = st.session_state.settings['english_speed']
-        eng_speed_text = str(int(eng_speed)) if eng_speed.is_integer() else f"{eng_speed:.1f}"
-        speed_info.append(f"영어 {eng_speed_text}배")
-        
-        # 중국어 배속 정보
-        zh_speed = st.session_state.settings['chinese_speed']
-        zh_speed_text = str(int(zh_speed)) if zh_speed.is_integer() else f"{zh_speed:.1f}"
-        speed_info.append(f"중국어 {zh_speed_text}배")
-        
-        # 베트남어 배속 정보
-        vn_speed = st.session_state.settings['vietnamese_speed']
-        vn_speed_text = str(int(vn_speed)) if vn_speed.is_integer() else f"{vn_speed:.1f}"
-        speed_info.append(f"베트남어 {vn_speed_text}배")
-        
-        # 배속 정보를 하나의 문자열로 결합
-        speed_display = " | ".join(speed_info)
+        # 순위에 따라 실제 재생되는 음성의 배속만 표시
+        for lang, repeat in [
+            (st.session_state.settings['first_lang'], st.session_state.settings['first_repeat']),
+            (st.session_state.settings['second_lang'], st.session_state.settings['second_repeat']),
+            (st.session_state.settings['third_lang'], st.session_state.settings['third_repeat'])
+        ]:
+            if repeat > 0:  # 재생 횟수가 0보다 큰 경우만 표시
+                speed = st.session_state.settings.get(f'{lang}_speed', 1.2)
+                speed_text = str(int(speed)) if speed.is_integer() else f"{speed:.1f}"
+                
+                # 언어별 한글 표시
+                lang_display = {
+                    'korean': '한글',
+                    'english': '영어',
+                    'chinese': '중국어',
+                    'japanese': '일본어',
+                    'vietnamese': '베트남어'
+                }.get(lang, lang)
+                
+                speed_info.append(f"{lang_display} {speed_text}배")
     
+    with col2:
+        if st.button("⚙️ 설정"):
+            st.session_state.page = 'settings_from_learning'
+            st.rerun()
+        if st.button("⏹️ 종료"):
+            st.session_state.page = 'settings'
+            st.rerun()
+
     # 자막을 위한 빈 컨테이너
     subtitles = [st.empty() for _ in range(3)]
 
-    return progress, status, subtitles
+    return progress, status, subtitles, speed_info
 
 async def create_break_audio():
     """브레이크 음성 생성"""
@@ -877,7 +840,7 @@ async def start_learning():
     """학습 시작"""
     settings = st.session_state.settings
     sentence_count = 0
-    repeat_count = 0  # 현재 반복 횟수
+    repeat_count = 0
     
     # 엑셀에서 문장 가져오기
     try:
@@ -905,22 +868,10 @@ async def start_learning():
         st.error(f"엑셀 파일 읽기 오류: {e}")
         return
 
-    # 학습 UI 생성
-    progress, status, subtitles = create_learning_ui()
+    # 학습 UI 생성 및 배속 정보 가져오기
+    progress, status, subtitles, speed_info = create_learning_ui()
     
-    # 상단 컨트롤 패널 - 학습 종료 및 설정 버튼
-    with st.container():
-        col1, col2, col3 = st.columns([0.6, 0.2, 0.2])
-        with col2:
-            if st.button("⚙️ 설정", key="settings_btn"):
-                st.session_state.page = 'settings_from_learning'
-                st.rerun()
-        with col3:
-            if st.button("⏹️ 종료", key="stop_btn"):
-                st.session_state.page = 'settings'
-                st.rerun()
-
-    # 자막 표시를 위한 빈 컨테이너
+    # 자막을 위한 빈 컨테이너
     subtitles = [st.empty() for _ in range(3)]
     
     # 이전 문장 자막 저장용 변수
@@ -963,23 +914,25 @@ async def start_learning():
             speed_info = []
             
             # 순위에 따라 실제 재생되는 음성의 배속만 표시
-            for lang in [settings['first_lang'], settings['second_lang'], settings['third_lang']]:
-                if lang == 'korean' and settings['first_repeat'] > 0:
-                    ko_speed = settings['korean_speed']
-                    ko_speed_text = str(int(ko_speed)) if ko_speed.is_integer() else f"{ko_speed:.1f}"
-                    speed_info.append(f"한글 {ko_speed_text}배")
-                elif lang == 'english' and settings['second_repeat'] > 0:
-                    eng_speed = settings['english_speed']
-                    eng_speed_text = str(int(eng_speed)) if eng_speed.is_integer() else f"{eng_speed:.1f}"
-                    speed_info.append(f"영어 {eng_speed_text}배")
-                elif lang == 'chinese' and settings['third_repeat'] > 0:
-                    zh_speed = settings['chinese_speed']
-                    zh_speed_text = str(int(zh_speed)) if zh_speed.is_integer() else f"{zh_speed:.1f}"
-                    speed_info.append(f"중국어 {zh_speed_text}배")
-                elif lang == 'vietnamese' and settings['third_repeat'] > 0:  # 베트남어 추가
-                    vn_speed = settings['vietnamese_speed']
-                    vn_speed_text = str(int(vn_speed)) if vn_speed.is_integer() else f"{vn_speed:.1f}"
-                    speed_info.append(f"베트남어 {vn_speed_text}배")
+            for lang, repeat in [
+                (settings['first_lang'], settings['first_repeat']),
+                (settings['second_lang'], settings['second_repeat']),
+                (settings['third_lang'], settings['third_repeat'])
+            ]:
+                if repeat > 0:  # 재생 횟수가 0보다 큰 경우만 표시
+                    speed = settings.get(f'{lang}_speed', 1.2)
+                    speed_text = str(int(speed)) if speed.is_integer() else f"{speed:.1f}"
+                    
+                    # 언어별 한글 표시
+                    lang_display = {
+                        'korean': '한글',
+                        'english': '영어',
+                        'chinese': '중국어',
+                        'japanese': '일본어',
+                        'vietnamese': '베트남어'
+                    }.get(lang, lang)
+                    
+                    speed_info.append(f"{lang_display} {speed_text}배")
             
             # 배속 정보를 하나의 문자열로 결합
             speed_display = " | ".join(speed_info)
