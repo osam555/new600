@@ -16,6 +16,7 @@ import json
 import base64
 from gtts import gTTS
 from pydub import AudioSegment
+import io
 
 ## streamlit run en600st/en600_st_app.py
 
@@ -64,7 +65,6 @@ VOICE_MAPPING = {
     'japanese': {
         "Nanami": "ja-JP-NanamiNeural",
         "Keita": "ja-JP-KeitaNeural",
-        "Naoki": "ja-JP-NaokiNeural"
     },
     'vietnamese': {
         'vi-VN': 'vi-VN'  # gTTS용 베트남어 음성
@@ -177,22 +177,25 @@ def initialize_session_state():
             'eng_voice': 'Steffan',
             'kor_voice': '선희',
             'zh_voice': 'Yunjian',
-            'jp_voice': 'Nanami',  # 일본어 기본 음성
-            'vi_voice': 'vi-VN',   # 베트남어 기본 음성
-            'start_row': 301,
-            'end_row': 350,
-            'word_delay': 0.5,
-            'spacing': 0.5,
-            'english_speed': 3.0,
-            'korean_speed': 2.0,
-            'chinese_speed': 2.0,
-            'japanese_speed': 2.0,
-            'subtitle_delay': 0.5,
+            'jp_voice': 'Nanami',
+            'vi_voice': 'vi-VN',
+            'start_row': 1,
+            'end_row': 50,
+            'word_delay': 1,
+            'spacing': 1.0,          # 기본값 1.0으로 명시
+            'subtitle_delay': 1.0,   # 기본값 1.0으로 명시
+            'next_sentence_time': 1.0,  # 기본값 1.0으로 명시
+            'english_speed': 1.2,
+            'korean_speed': 1.2,
+            'chinese_speed': 1.2,
+            'japanese_speed': 1.2,
+            'vietnamese_speed': 1.2,
             'keep_subtitles': True,
             'break_enabled': True,
             'break_interval': 10,
-            'break_duration': 5,
-            'next_sentence_time': 0.5,
+            'break_duration': 10,
+            'auto_repeat': True,
+            'repeat_count': 5,  # 기본 반복 횟수 추가
             'english_font': 'Pretendard',
             'korean_font': 'Pretendard',
             'chinese_font': 'SimSun',
@@ -206,8 +209,6 @@ def initialize_session_state():
                 'second_lang': False,
                 'third_lang': False,
             },
-            'auto_repeat': True,
-            'repeat_count': 5,  # 기본 반복 횟수 추가
             'english_color': '#00FF00',  # 다크모드: 초록색, 브라이트모드: 검정색
             'korean_color': '#00FF00',   # 다크모드: 초록색, 브라이트모드: 검정색
             'chinese_color': '#00FF00',  # 다크모드: 초록색, 브라이트모드: 검정색
@@ -216,7 +217,7 @@ def initialize_session_state():
             'japanese_speed': 2.0,  # 일본어 배속 기본값 추가
             'vietnamese_font': 'Arial',  # 베트남어 폰트 기본값 추가
             'vietnamese_font_size': 30,
-            'vietnamese_speed': 2.0,
+            'vietnamese_speed': 1.0,
         }
 
     # break.wav 파일 존재 여부 확인
@@ -467,27 +468,25 @@ def create_settings_ui(return_to_learning=False):
                 index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(settings['first_lang']),
                 format_func=lambda x: LANG_DISPLAY[x],
                 key="settings_first_lang")
-            first_repeat = st.number_input("음성 재생(횟수)",
-                                         value=settings['first_repeat'],
-                                         min_value=0,
-                                         key="first_repeat",
-                                         format="%d")
+            # 음성 재생 횟수를 선택박스로 변경
+            current_repeat = max(1, min(settings.get('first_repeat', 1), 5))  # 1-5 사이로 제한
+            settings['first_repeat'] = st.selectbox("음성 재생(횟수)",
+                                      options=list(range(1, 6)),  # 1-5회
+                                      index=current_repeat-1,  # 0-based index
+                                      key="first_repeat")
+            # 배속을 선택박스로 변경 (0.7부터 시작)
+            speed_options = [round(x * 0.1, 1) for x in range(7, 51)]  # 0.7-5.0배, 0.1간격
             speed_key = f"{settings['first_lang']}_speed"
-            # 기본값 설정 추가
-            default_speeds = {
-                'korean_speed': 2.0,
-                'english_speed': 2.0,
-                'chinese_speed': 2.0,
-                'japanese_speed': 2.0,
-                'vietnamese_speed': 2.0
-            }
-            first_speed = st.number_input("음성 속도(배)",
-                                        value=settings.get(speed_key, default_speeds[speed_key]),
-                                        min_value=0.1,
-                                        step=0.1,
-                                        format="%.1f",
-                                        key="first_speed")
-            settings[speed_key] = first_speed
+            current_speed = round(float(settings.get(speed_key, 1.2)), 1)
+            current_speed = max(0.7, min(current_speed, 5.0))
+            try:
+                speed_index = speed_options.index(current_speed)
+            except ValueError:
+                speed_index = speed_options.index(1.2)
+            settings[speed_key] = st.selectbox("음성 속도(배)",
+                                     options=speed_options,
+                                     index=speed_index,
+                                     key="first_speed")
 
         with col2:
             settings['second_lang'] = st.selectbox("2순위 언어",
@@ -495,19 +494,24 @@ def create_settings_ui(return_to_learning=False):
                 index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(settings['second_lang']),
                 format_func=lambda x: LANG_DISPLAY[x],
                 key="settings_second_lang")
-            second_repeat = st.number_input("음성 재생(횟수)",
-                                          value=settings['second_repeat'],
-                                          min_value=0,
-                                          key="second_repeat",
-                                          format="%d")
+            # 음성 재생 횟수를 선택박스로 변경
+            current_repeat = max(1, min(settings.get('second_repeat', 1), 5))  # 1-5 사이로 제한
+            settings['second_repeat'] = st.selectbox("음성 재생(횟수)",
+                                       options=list(range(1, 6)),  # 1-5회
+                                       index=current_repeat-1,  # 0-based index
+                                       key="second_repeat")
+            # 배속을 선택박스로 변경
             speed_key = f"{settings['second_lang']}_speed"
-            second_speed = st.number_input("음성 속도(배)",
-                                         value=settings.get(speed_key, default_speeds[speed_key]),
-                                         min_value=0.1,
-                                         step=0.1,
-                                         format="%.1f",
-                                         key="second_speed")
-            settings[speed_key] = second_speed
+            current_speed = round(float(settings.get(speed_key, 1.2)), 1)
+            current_speed = max(0.7, min(current_speed, 5.0))
+            try:
+                speed_index = speed_options.index(current_speed)
+            except ValueError:
+                speed_index = speed_options.index(1.2)
+            settings[speed_key] = st.selectbox("음성 속도(배)",
+                                      options=speed_options,
+                                      index=speed_index,
+                                      key="second_speed")
 
         with col3:
             settings['third_lang'] = st.selectbox("3순위 언어",
@@ -515,44 +519,68 @@ def create_settings_ui(return_to_learning=False):
                 index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(settings['third_lang']),
                 format_func=lambda x: LANG_DISPLAY[x],
                 key="settings_third_lang")
-            third_repeat = st.number_input("음성 재생(횟수)",
-                                         value=settings['third_repeat'],
-                                         min_value=0,
-                                         key="third_repeat",
-                                         format="%d")
+            # 음성 재생 횟수를 선택박스로 변경
+            current_repeat = max(1, min(settings.get('third_repeat', 1), 5))  # 1-5 사이로 제한
+            settings['third_repeat'] = st.selectbox("음성 재생(횟수)",
+                                      options=list(range(1, 6)),  # 1-5회
+                                      index=current_repeat-1,  # 0-based index
+                                      key="third_repeat")
+            # 배속을 선택박스로 변경
             speed_key = f"{settings['third_lang']}_speed"
-            third_speed = st.number_input("음성 속도(배)",
-                                        value=settings.get(speed_key, default_speeds[speed_key]),
-                                        min_value=0.1,
-                                        step=0.1,
-                                        format="%.1f",
-                                        key="third_speed")
-            settings[speed_key] = third_speed
+            current_speed = round(float(settings.get(speed_key, 1.2)), 1)
+            current_speed = max(0.7, min(current_speed, 5.0))
+            try:
+                speed_index = speed_options.index(current_speed)
+            except ValueError:
+                speed_index = speed_options.index(1.2)
+            settings[speed_key] = st.selectbox("음성 속도(배)",
+                                     options=speed_options,
+                                     index=speed_index,
+                                     key="third_speed")
 
         # 문장 재생 설정
         st.subheader("문장 재생")
         col1, col2, col3, col4 = st.columns(4)
+        
+        # 0.1초부터 2초까지 0.1초 간격의 옵션 생성
+        time_options = [round(x * 0.1, 1) for x in range(1, 21)]  # 0.1-2.0초
+        
         with col1:
-            spacing = st.number_input("문장 간격(초)",
-                                    value=settings['spacing'],
-                                    min_value=0.1,
-                                    step=0.1,
-                                    format="%.1f",
-                                    key="spacing")
+            current_spacing = round(float(settings.get('spacing', 1.0)), 1)  # 기본값 1.0
+            current_spacing = max(0.1, min(current_spacing, 2.0))
+            try:
+                spacing_index = time_options.index(current_spacing)
+            except ValueError:
+                spacing_index = time_options.index(1.0)  # 기본값 1.0초
+            settings['spacing'] = st.selectbox("문장 간격(초)",
+                                            options=time_options,
+                                            index=spacing_index,
+                                            key="spacing")
+
         with col2:
-            subtitle_delay = st.number_input("자막 딜레이(초)",
-                                           value=settings['subtitle_delay'],
-                                           min_value=0.1,
-                                           step=0.1,
-                                           format="%.1f",
-                                           key="subtitle_delay")
+            current_delay = round(float(settings.get('subtitle_delay', 1.0)), 1)  # 기본값 1.0
+            current_delay = max(0.1, min(current_delay, 2.0))
+            try:
+                delay_index = time_options.index(current_delay)
+            except ValueError:
+                delay_index = time_options.index(1.0)  # 기본값 1.0초
+            settings['subtitle_delay'] = st.selectbox("자막 딜레이(초)",
+                                                   options=time_options,
+                                                   index=delay_index,
+                                                   key="subtitle_delay")
+
         with col3:
-            next_sentence_time = st.number_input("다음 문장(초)",
-                                               value=settings['next_sentence_time'],
-                                               min_value=0.1,
-                                               step=0.1,
-                                               format="%.1f",
-                                               key="next_sentence_time")
+            current_next = round(float(settings.get('next_sentence_time', 1.0)), 1)  # 기본값 1.0
+            current_next = max(0.1, min(current_next, 2.0))
+            try:
+                next_index = time_options.index(current_next)
+            except ValueError:
+                next_index = time_options.index(1.0)  # 기본값 1.0초
+            settings['next_sentence_time'] = st.selectbox("다음 문장(초)",
+                                                       options=time_options,
+                                                       index=next_index,
+                                                       key="next_sentence_time")
+
         with col4:
             settings['break_interval'] = st.selectbox("브레이크 문장",
                                                   options=['없음', '5', '10', '15', '20'],
@@ -734,47 +762,18 @@ def create_settings_ui(return_to_learning=False):
 
 async def create_audio(text, voice, speed=1.0):
     """
-    음성 파일 생성 (gTTS + HTML/JS for Vietnamese, edge-tts for others)
+    음성 파일 생성 - 베트남어도 edge-tts 사용
     """
     try:
         if not text or not voice:
             return None
 
-        output_file = TEMP_DIR / f"temp_{int(time.time()*1000)}.wav"
-
+        # 베트남어도 edge-tts 사용
         if voice == 'vi-VN':
-            # 베트남어는 gTTS를 직접 사용, 속도 조절은 HTML/JS로
-            try:
-                tts = gTTS(text=text, lang='vi')
-                temp_mp3 = TEMP_DIR / f"temp_{int(time.time() * 1000)}.mp3"
-                tts.save(str(temp_mp3))
+            voice = 'vi-VN-HoaiMyNeural'  # edge-tts의 베트남어 음성
 
-                # base64 인코딩
-                with open(temp_mp3, 'rb') as f:
-                    audio_bytes = f.read()
-                audio_base64 = base64.b64encode(audio_bytes).decode()
-
-                # HTML audio 태그와 JavaScript로 속도 조절
-                st.markdown(f"""
-                    <audio id="audio-{text}" autoplay style="display: none">
-                        <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-                    </audio>
-                    <script>
-                        var audio = document.getElementById('audio-{text}');
-                        audio.playbackRate = {speed};
-                    </script>
-                """, unsafe_allow_html=True)
-
-                # 임시 MP3 파일 삭제
-                os.remove(temp_mp3)
-                return None  # HTML/JS로 재생하므로 None 반환
-
-            except Exception as e:
-                st.error(f"베트남어 음성 생성 오류: {e}")
-                traceback.print_exc()
-                return None
-        else:
-             # edge-tts 사용 (기존 로직)
+        output_file = TEMP_DIR / f"temp_{int(time.time()*1000)}.wav"
+        try:
             if speed > 1:
                 rate_str = f"+{int((speed - 1) * 100)}%"
             else:
@@ -784,8 +783,15 @@ async def create_audio(text, voice, speed=1.0):
             await communicate.save(str(output_file))
             return str(output_file)
 
+        except Exception as e:
+            st.error(f"음성 생성 오류: {str(e)}")
+            traceback.print_exc()
+            if output_file.exists():
+                output_file.unlink()
+            return None
+
     except Exception as e:
-        st.error(f"음성 생성 오류: {e}")
+        st.error(f"음성 생성 오류: {str(e)}")
         traceback.print_exc()
         return None
 
@@ -1160,44 +1166,184 @@ def get_setting(key, default_value):
     """안전하게 설정값을 가져오는 유틸리티 함수"""
     return st.session_state.settings.get(key, default_value)
 
-def play_audio(file_path):
+def play_audio(file_path, sentence_interval=1.0, next_sentence=False):
     """
-    음성 파일 재생 (edge-tts 전용, 베트남어는 HTML/JS로 재생)
+    음성 파일 재생 - 문장 간격 및 다음 문장 설정 적용
     """
     try:
         if not file_path or not os.path.exists(file_path):
             st.error(f"파일 경로 오류: {file_path}")
             return
 
-        # soundfile로 파일 길이 계산 (edge-tts만 해당)
-        data, samplerate = sf.read(file_path)
-        duration = len(data) / samplerate
+        # WAV 파일에서 실제 재생 시간 계산
+        try:
+            with wave.open(file_path, 'rb') as wav_file:
+                frames = wav_file.getnframes()
+                rate = wav_file.getframerate()
+                duration = frames / float(rate)
+        except Exception:
+            with open(file_path, 'rb') as f:
+                audio_bytes = f.read()
+            duration = len(audio_bytes) / 32000
 
-        # base64 인코딩
+        # 파일을 바이트로 읽기
         with open(file_path, 'rb') as f:
             audio_bytes = f.read()
         audio_base64 = base64.b64encode(audio_bytes).decode()
 
-        # HTML audio 태그로 재생
+        # 고유한 ID 생성
+        audio_id = f"audio_{int(time.time() * 1000)}"
+        
+        # HTML 오디오 요소 생성
         st.markdown(f"""
-            <audio autoplay style="display: none">
+            <audio id="{audio_id}" autoplay="true">
                 <source src="data:audio/wav;base64,{audio_base64}" type="audio/wav">
             </audio>
+            <script>
+                (function() {{
+                    const audio = document.getElementById("{audio_id}");
+                    
+                    // 이전 오디오가 있으면 정지
+                    if (window.currentAudio && window.currentAudio !== audio) {{
+                        window.currentAudio.pause();
+                        window.currentAudio.currentTime = 0;
+                        window.currentAudio.remove();
+                    }}
+                    
+                    // 현재 오디오를 전역 변수에 저장
+                    window.currentAudio = audio;
+                    window.audioEnded = false;
+                    
+                    // 재생 완료 이벤트
+                    audio.onended = function() {{
+                        window.audioEnded = true;
+                        if (window.currentAudio === audio) {{
+                            window.currentAudio = null;
+                        }}
+                        audio.remove();
+                    }};
+
+                    // 재생 시작 이벤트
+                    audio.onplay = function() {{
+                        window.audioEnded = false;
+                    }};
+                }})();
+            </script>
         """, unsafe_allow_html=True)
 
-        # 재생 시간만큼 대기
-        time.sleep(duration)
+        # 대기 시간 계산
+        if next_sentence:
+            # 다음 문장으로 빠르게 넘어가기
+            wait_time = duration + 0.3  # 최소 대기 시간
+        else:
+            # 문장 간격 적용
+            base_wait = duration
+            
+            # 긴 문장에 대한 추가 대기 시간
+            if duration > 5:
+                extra_wait = duration * 0.1  # 10% 추가
+            else:
+                extra_wait = 0.5
+                
+            # 사용자가 설정한 문장 간격 적용
+            wait_time = base_wait + extra_wait + sentence_interval
+
+        # 최소 대기 시간 보장
+        wait_time = max(wait_time, duration + 0.3)
+        
+        time.sleep(wait_time)
 
     except Exception as e:
-        st.error(f"음성 재생 오류: {e}")
-        traceback.print_exc()
+        st.error(f"음성 재생 오류: {str(e)}")
     finally:
         # 임시 파일 삭제
-        if file_path and TEMP_DIR in Path(file_path).parents:
-            try:
+        try:
+            if file_path and TEMP_DIR in Path(file_path).parents:
                 os.remove(file_path)
-            except Exception as e:
-                st.error(f"임시 파일 삭제 오류: {e}")
+        except Exception:
+            pass
+
+def save_learning_state(df, current_index, session_state):
+    """
+    학습 상태 저장 함수 개선
+    """
+    try:
+        # 현재 학습 상태 저장
+        state_data = {
+            'current_index': current_index,
+            'timestamp': time.time(),
+            'total_rows': len(df),
+            'progress': f"{current_index}/{len(df)}",
+            'last_sentence': df.iloc[current_index]['english'] if current_index < len(df) else ""
+        }
+        
+        # 파일 저장
+        save_path = TEMP_DIR / 'learning_state.json'
+        with open(save_path, 'w', encoding='utf-8') as f:
+            json.dump(state_data, f, ensure_ascii=False, indent=2)
+            
+        st.success(f"학습 상태가 저장되었습니다. (진행률: {state_data['progress']})")
+        
+        # 세션 상태 업데이트
+        session_state.saved_index = current_index
+        session_state.has_saved_state = True
+        
+        return True
+        
+    except Exception as e:
+        st.error(f"저장 중 오류 발생: {str(e)}")
+        return False
+
+def load_learning_state():
+    """
+    학습 상태 불러오기 함수 개선
+    """
+    try:
+        save_path = TEMP_DIR / 'learning_state.json'
+        
+        if not save_path.exists():
+            return None
+            
+        with open(save_path, 'r', encoding='utf-8') as f:
+            state_data = json.load(f)
+            
+        # 저장된 데이터 검증
+        required_keys = ['current_index', 'timestamp', 'total_rows']
+        if not all(key in state_data for key in required_keys):
+            st.warning("저장된 상태 데이터가 유효하지 않습니다.")
+            return None
+            
+        return state_data
+        
+    except Exception as e:
+        st.error(f"상태 불러오기 중 오류 발생: {str(e)}")
+        return None
+
+def handle_resume_learning(df):
+    """
+    학습 재개 처리 함수
+    """
+    try:
+        state_data = load_learning_state()
+        if state_data is None:
+            return 0
+            
+        # 저장된 상태와 현재 데이터 검증
+        if state_data['total_rows'] != len(df):
+            st.warning("저장된 데이터의 크기가 현재 데이터와 다릅니다.")
+            return 0
+            
+        current_index = state_data['current_index']
+        if 0 <= current_index < len(df):
+            st.success(f"이전 학습 상태를 불러왔습니다. (진행률: {current_index}/{len(df)})")
+            return current_index
+        else:
+            st.warning("유효하지 않은 인덱스입니다.")
+            return 0
+            
+    except Exception as e:
+        st.error(f"학습 재개 중 오류 발생: {str(e)}")
+        return 0
 
 if __name__ == "__main__":
     main()
