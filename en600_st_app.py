@@ -905,7 +905,7 @@ async def start_learning():
                 'english': {'text': eng, 'voice': VOICE_MAPPING['english'][settings['eng_voice']], 'speed': settings['english_speed']},
                 'chinese': {'text': chn, 'voice': VOICE_MAPPING['chinese'][settings['zh_voice']], 'speed': settings['chinese_speed']},
                 'japanese': {'text': jpn, 'voice': VOICE_MAPPING['japanese'][settings['jp_voice']], 'speed': settings['japanese_speed']},
-                'vietnamese': {'text': vn, 'voice': VOICE_MAPPING['vietnamese']['vi-VN'], 'speed': settings['vietnamese_speed']}
+                'vietnamese': {'text': vn, 'voice': VOICE_MAPPING['vietnamese'][settings['vi_voice']], 'speed': settings['vietnamese_speed']}
             }
 
             progress.progress((i + 1) / total_sentences)
