@@ -768,6 +768,28 @@ def create_settings_ui(return_to_learning=False):
             </style>
         """, unsafe_allow_html=True)
 
+def get_voice_mapping(language, voice_setting):
+    """안전하게 음성 매핑을 가져오는 함수"""
+    try:
+        # 기본값 설정
+        default_voices = {
+            'korean': '선희',
+            'english': 'Steffan',
+            'chinese': 'Yunjian',
+            'japanese': 'Nanami',
+            'vietnamese': 'HoaiMy'
+        }
+        
+        # 설정된 음성이 없거나 매핑에 없는 경우 기본값 사용
+        if not voice_setting or voice_setting not in VOICE_MAPPING.get(language, {}):
+            voice_setting = default_voices.get(language)
+            
+        return VOICE_MAPPING[language][voice_setting]
+    except Exception as e:
+        st.error(f"음성 매핑 오류 ({language}): {str(e)}")
+        # 기본값 반환
+        return VOICE_MAPPING[language][default_voices[language]]
+
 async def create_audio(text, voice, speed=1.0):
     """
     음성 파일 생성 - 베트남어도 edge-tts 사용
@@ -908,11 +930,31 @@ async def start_learning():
         for i, (eng, kor, chn, jpn, vn) in enumerate(zip(english, korean, chinese, japanese, vietnamese)):
             # 언어별 텍스트와 음성 매핑
             lang_mapping = {
-                'korean': {'text': kor, 'voice': VOICE_MAPPING['korean'][settings['kor_voice']], 'speed': settings['korean_speed']},
-                'english': {'text': eng, 'voice': VOICE_MAPPING['english'][settings['eng_voice']], 'speed': settings['english_speed']},
-                'chinese': {'text': chn, 'voice': VOICE_MAPPING['chinese'][settings['zh_voice']], 'speed': settings['chinese_speed']},
-                'japanese': {'text': jpn, 'voice': VOICE_MAPPING['japanese'][settings['jp_voice']], 'speed': settings['japanese_speed']},
-                'vietnamese': {'text': vn, 'voice': VOICE_MAPPING['vietnamese'][settings['vi_voice']], 'speed': settings['vietnamese_speed']}
+                'korean': {
+                    'text': kor, 
+                    'voice': get_voice_mapping('korean', settings.get('kor_voice')), 
+                    'speed': settings.get('korean_speed', 1.2)
+                },
+                'english': {
+                    'text': eng, 
+                    'voice': get_voice_mapping('english', settings.get('eng_voice')), 
+                    'speed': settings.get('english_speed', 1.2)
+                },
+                'chinese': {
+                    'text': chn, 
+                    'voice': get_voice_mapping('chinese', settings.get('zh_voice')), 
+                    'speed': settings.get('chinese_speed', 1.2)
+                },
+                'japanese': {
+                    'text': jpn, 
+                    'voice': get_voice_mapping('japanese', settings.get('jp_voice')), 
+                    'speed': settings.get('japanese_speed', 1.2)
+                },
+                'vietnamese': {
+                    'text': vn, 
+                    'voice': get_voice_mapping('vietnamese', settings.get('vi_voice')), 
+                    'speed': settings.get('vietnamese_speed', 1.2)
+                }
             }
 
             progress.progress((i + 1) / total_sentences)
