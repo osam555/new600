@@ -340,7 +340,7 @@ def create_settings_ui(return_to_learning=False):
         settings = st.session_state.settings
         col1, col2 = st.columns([0.7, 0.3])
         with col1:
-            st.markdown('<h1 style="font-size: 2rem; color: #FF0000;">도파민 대충영어 😻 2배 한국어</h1>', unsafe_allow_html=True)
+            st.markdown('<h1 style="font-size: 1.5rem; color: #FF0000;">도파민 대충영어 : 2배 한국어</h1>', unsafe_allow_html=True)
         with col2:
             # 엑셀 파일에서 시트 선택 및 최대 행 수 가져오기
             try:
@@ -350,7 +350,7 @@ def create_settings_ui(return_to_learning=False):
                 
                 # 시트 선택 (기본값: 첫 번째 시트)
                 selected_sheet = st.selectbox(
-                    "주제: 생활영어 | 여행영어 | 천일문",
+                    "주제 : 생활영어, 여행영어, 천일문",
                     options=sheet_names,
                     index=0,
                     key="sheet_select"
@@ -393,7 +393,7 @@ def create_settings_ui(return_to_learning=False):
         """, unsafe_allow_html=True)
 
         # 문장 범위 선택 UI 개선
-        st.subheader("학습 범위 선택 : 총 600문장")
+        st.subheader("학습범위 선택(총 600문장)")
         col1, col2 = st.columns(2)
         
         with col1:
@@ -458,11 +458,11 @@ def create_settings_ui(return_to_learning=False):
                                       options=list(range(0, 3)),  # 1-5회
                                       index=current_repeat-1,  # 0-based index
                                       key="first_repeat")
-            # 배속을 선택박스로 변경 (0.8부터 시작)
-            speed_options = [round(x * 0.2, 1) for x in range(4, 21)]  # 0.8-4.0배, 0.2간격
+            # 배속을 선택박스로 변경
+            speed_options = [round(x * 0.2, 1) for x in range(4, 31)]  # 0.8-6.0배, 0.2간격
             speed_key = f"{settings['first_lang']}_speed"
             current_speed = round(float(settings.get(speed_key, 1.2)), 1)
-            current_speed = max(0.8, min(current_speed, 4.0))
+            current_speed = max(0.8, min(current_speed, 6.0 if settings['first_lang'] == 'korean' else 4.0))
             try:
                 speed_index = speed_options.index(current_speed)
             except ValueError:
@@ -487,7 +487,7 @@ def create_settings_ui(return_to_learning=False):
             # 배속을 선택박스로 변경
             speed_key = f"{settings['second_lang']}_speed"
             current_speed = round(float(settings.get(speed_key, 1.2)), 1)
-            current_speed = max(0.8, min(current_speed, 4.0))
+            current_speed = max(0.8, min(current_speed, 6.0 if settings['second_lang'] == 'korean' else 4.0))
             try:
                 speed_index = speed_options.index(current_speed)
             except ValueError:
@@ -515,7 +515,7 @@ def create_settings_ui(return_to_learning=False):
                 # 배속을 선택박스로 변경
                 speed_key = f"{settings['third_lang']}_speed"
                 current_speed = round(float(settings.get(speed_key, 1.2)), 1)
-                current_speed = max(0.8, min(current_speed, 4.0))
+                current_speed = max(0.8, min(current_speed, 6.0 if settings['third_lang'] == 'korean' else 4.0))
                 try:
                     speed_index = speed_options.index(current_speed)
                 except ValueError:
