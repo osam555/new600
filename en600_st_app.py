@@ -98,10 +98,10 @@ def initialize_session_state():
     default_settings = {
         'first_lang': 'korean',
         'second_lang': 'english',
-        'third_lang': 'chinese',
+        'third_lang': 'none',  # 기본값을 'none'으로 변경
         'first_repeat': 0,
         'second_repeat': 1,
-        'third_repeat': 1,  
+        'third_repeat': 0,  # 기본값 0으로 변경
         'eng_voice': 'Steffan',
         'kor_voice': '선희',
         'zh_voice': 'Yunjian',
@@ -137,7 +137,7 @@ def initialize_session_state():
             'second_lang': False,
             'third_lang': False,
         },
-        'english_color': '#00FF00',  # 다크모드: 초록색, 브라이트모드: 검정색
+        'english_color': '#FFFFF0',  # 아이보리 색상으로 변경
         'korean_color': '#00FF00',   # 다크모드: 초록색, 브라이트모드: 검정색
         'chinese_color': '#00FF00',  # 다크모드: 초록색, 브라이트모드: 검정색
         'japanese_color': '#00FF00' if st.get_option("theme.base") == "dark" else '#FFFFFF',  # 다크모드: 초록색, 라이트모드: 흰색
@@ -267,14 +267,24 @@ def create_settings_ui(return_to_learning=False):
         # 저장/취소 버튼
         col1, col2 = st.columns([0.8, 0.2])
         with col1:
-            if st.button("💾 저장 후 학습 재개", type="primary"):
+            if st.button("💾 저장 후 학습 재개", type="primary", key="save_and_return"):
                 save_settings(settings)
-                st.session_state.page = 'learning'
-                st.rerun()
+                if return_to_learning:
+                    st.session_state.page = 'learning'
+                    st.rerun()
+                else:
+                    # 일반 설정 화면에서는 settings 페이지로
+                    st.session_state.page = 'settings'
+                    st.rerun()
         with col2:
-            if st.button("❌ 취소"):
-                st.session_state.page = 'learning'
-                st.rerun()
+            if st.button("❌ 취소", key="cancel_button"):
+                if return_to_learning:
+                    st.session_state.page = 'learning'
+                    st.rerun()
+                else:
+                    # 일반 설정 화면에서는 settings 페이지로
+                    st.session_state.page = 'settings'
+                    st.rerun()
     else:
         # 기본 설정 모드 - 전체 UI
         # 다크 모드 감지
@@ -303,77 +313,42 @@ def create_settings_ui(return_to_learning=False):
                     'vietnamese_color': '#FFFFFF',
                 })
         
-        # CSS 스타일 추가 (다크 모드 대응)
+        # 서브헤더와 구분자 스타일 수정
         st.markdown("""
             <style>
-                /* 기본 텍스트 색상 */
-                .st-emotion-cache-1v0mbdj {
-                    color: white !important;
-                }
-                
-                /* 제목 (h1) 폰트 크기 및 색상 조정 */
-                .st-emotion-cache-10trblm {
-                    font-size: 1.5rem !important;
-                    margin-bottom: 0px !important;
-                    color: white !important;
-                }
-                
-                /* 부제목 (h2) 폰트 크기 및 색상 조정 */
-                .st-emotion-cache-1629p8f h2 {
+                /* 서브헤더 스타일 수정 */
+                .stMarkdown h2,
+                .streamlit-expanderHeader,
+                [data-testid="stSidebarNav"] h2,
+                div[data-testid="stMarkdownContainer"] h2 {
                     font-size: 1.2rem !important;
+                    color: #00FF00 !important;  /* 초록색으로 변경 */
+                    border-bottom: 2px solid #00FF00 !important;  /* 초록색 밑줄 추가 */
+                    padding-bottom: 0.3rem !important;
                     margin-top: 1rem !important;
                     margin-bottom: 0.5rem !important;
-                    color: white !important;
+                    display: inline-block !important;
                 }
-                
-                /* 입력 필드 레이블 색상 */
-                .st-emotion-cache-1a7c8b8 {
-                    color: white !important;
+
+                /* 구분자 스타일 */
+                .separator {
+                    color: #00FF00 !important;
+                    font-size: 1.2rem !important;
+                    padding: 0 0.5rem !important;
+                    display: inline !important;
+                    vertical-align: middle !important;
+                    line-height: 1 !important;
                 }
-                
-                /* 체크박스 및 라디오 버튼 색상 */
-                .st-emotion-cache-1a7c8b8 label {
-                    color: white !important;
+
+                /* 구분자 컨테이너 스타일 */
+                [data-testid="stMarkdownContainer"] {
+                    display: inline !important;
+                    white-space: nowrap !important;
                 }
-                
-                /* 숫자 입력 필드 스타일 */
-                div[data-testid="stNumberInput"] {
-                    max-width: 150px;
-                }
-                
-                /* 숫자 입력 필드 레이블 스타일 */
-                div[data-testid="stNumberInput"] label {
-                    font-size: 15px !important;
-                    color: white !important;
-                }
-                
-                /* 숫자 입력 필드 입력창 스타일 */
-                div[data-testid="stNumberInput"] input {
-                    font-size: 15px !important;
-                    padding: 4px 8px !important;
-                    color: white !important;
-                    background-color: #1E1E1E !important;
-                }
-                
-                /* 셀렉트 박스 스타일 */
-                div[data-testid="stSelectbox"] label {
-                    color: white !important;
-                }
-                
-                /* 셀렉트 박스 입력창 스타일 */
-                div[data-testid="stSelectbox"] select {
-                    color: white !important;
-                    background-color: #1E1E1E !important;
-                }
-                
-                /* 체크박스 스타일 */
-                div[data-testid="stCheckbox"] label {
-                    color: white !important;
-                }
-                
-                /* 색상 선택기 스타일 */
-                div[data-testid="stColorPicker"] label {
-                    color: white !important;
+
+                /* 영어 텍스트 기본 색상 */
+                .english-text {
+                    color: #FFFFF0 !important;  /* 아이보리 색상 */
                 }
             </style>
         """, unsafe_allow_html=True)
@@ -381,7 +356,7 @@ def create_settings_ui(return_to_learning=False):
         settings = st.session_state.settings
         col1, col2 = st.columns([0.7, 0.3])
         with col1:
-            st.markdown('<h1 style="font-size: 1.5rem; color: #00FF00;">도파민 대충영어 : 2배 한국어</h1>', unsafe_allow_html=True)
+            st.markdown('<h1 style="font-size: 1.5rem; color: #FF0000;">도파민 대충영어 : 2배 한국어</h1>', unsafe_allow_html=True)
         with col2:
             # 엑셀 파일에서 최대 행 수 가져오기
             try:
@@ -395,10 +370,10 @@ def create_settings_ui(return_to_learning=False):
                 st.error(f"엑셀 파일 읽기 오류: {e}")
                 return
             
-            # 학습 시작 버튼 (첫 화면에서만 표시)
-            if st.button("▶️ 학습 시작", use_container_width=True, key="start_btn"):
-                st.session_state.page = 'learning'
-                st.rerun()
+        # 학습 시작 버튼 (첫 화면에서만 표시)
+        if st.button("▶️ 학습 시작", use_container_width=True, key="start_btn"):
+            st.session_state.page = 'learning'
+            st.rerun()
 
         # 학습 시작 버튼 스타일
         st.markdown("""
@@ -412,30 +387,49 @@ def create_settings_ui(return_to_learning=False):
             </style>
         """, unsafe_allow_html=True)
 
-        # 시작/종료 번호와 반복 횟수 설정
-        col1, col2, col3 = st.columns([1, 1, 1])
+        # 문장 범위 선택 UI 개선
+        st.subheader("문장 범위 선택")
+        col1, col2 = st.columns(2)
+        
         with col1:
-            settings['start_row'] = st.number_input("시작번호",
-                                                  value=settings['start_row'],
-                                                  min_value=1,
-                                                  max_value=max_row,
-                                                  key="start_row_input",
-                                                  format="%d")
+            # 시작 번호 선택
+            start_options = list(range(1, max_row + 1, 20))
+            current_start = min(start_options, key=lambda x: abs(x - settings['start_row']))
+            settings['start_row'] = st.selectbox(
+                "시작 번호",
+                options=start_options,
+                index=start_options.index(current_start),
+                key="start_row_select"
+            )
+        
         with col2:
-            settings['end_row'] = st.number_input("종료번호",
-                                                value=settings['end_row'],
-                                                min_value=1,
-                                                max_value=max_row,
-                                                key="end_row_input",
-                                                format="%d")
-        with col3:
-            settings['repeat_count'] = st.selectbox("반복 횟수",
-                                                 options=['없음', '1', '2', '3', '4', '5'],
-                                                 index=0 if not settings.get('auto_repeat', True) else settings.get('repeat_count', 5),
-                                                 key="repeat_count_input")
-            settings['auto_repeat'] = settings['repeat_count'] != '없음'
-            if settings['auto_repeat']:
-                settings['repeat_count'] = int(settings['repeat_count'])
+            # 범위 선택 (20개 또는 50개 단위)
+            range_options = {
+                "20문장": 20,
+                "50문장": 50,
+                "100문장": 100,
+                "직접 입력": 0
+            }
+            selected_range = st.selectbox(
+                "문장 개수",
+                options=list(range_options.keys()),
+                key="range_select"
+            )
+            
+            if selected_range == "직접 입력":
+                settings['end_row'] = st.number_input(
+                    "종료 번호",
+                    value=min(settings['start_row'] + 19, max_row),
+                    min_value=settings['start_row'],
+                    max_value=max_row,
+                    key="end_row_input"
+                )
+            else:
+                range_value = range_options[selected_range]
+                settings['end_row'] = min(settings['start_row'] + range_value - 1, max_row)
+
+        # 선택된 범위 표시
+        st.info(f"선택된 범위: {settings['start_row']} ~ {settings['end_row']} (총 {settings['end_row'] - settings['start_row'] + 1}문장)")
 
         # 언어 순위 설정
         st.subheader("자막 | 음성 | 속도")
@@ -493,28 +487,34 @@ def create_settings_ui(return_to_learning=False):
 
         with col3:
             settings['third_lang'] = st.selectbox("3번째 언어",
-                options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
-                index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(settings['third_lang']),
-                format_func=lambda x: LANG_DISPLAY[x],
+                options=['none', 'korean', 'english', 'chinese', 'japanese', 'vietnamese'],  # 'none' 옵션 추가
+                index=['none', 'korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(settings['third_lang']),
+                format_func=lambda x: '없음' if x == 'none' else LANG_DISPLAY.get(x, x),  # 'none'을 '없음'으로 표시
                 key="settings_third_lang")
-            # 음성 재생 횟수를 선택박스로 변경
-            current_repeat = max(1, min(settings.get('third_repeat', 1), 5))  # 1-5 사이로 제한
-            settings['third_repeat'] = st.selectbox("음성 재생(횟수)",
-                                      options=list(range(1, 3)),  # 1-5회
-                                      index=current_repeat-1,  # 0-based index
-                                      key="third_repeat")
-            # 배속을 선택박스로 변경
-            speed_key = f"{settings['third_lang']}_speed"
-            current_speed = round(float(settings.get(speed_key, 1.2)), 1)
-            current_speed = max(0.8, min(current_speed, 4.0))
-            try:
-                speed_index = speed_options.index(current_speed)
-            except ValueError:
-                speed_index = speed_options.index(1.2)
-            settings[speed_key] = st.selectbox("음성 속도(배)",
-                                     options=speed_options,
-                                     index=speed_index,
-                                     key="third_speed")
+            
+            # 'none'이 아닐 때만 음성 재생 횟수와 속도 설정 표시
+            if settings['third_lang'] != 'none':
+                # 음성 재생 횟수를 선택박스로 변경
+                current_repeat = max(1, min(settings.get('third_repeat', 1), 5))  # 1-5 사이로 제한
+                settings['third_repeat'] = st.selectbox("음성 재생(횟수)",
+                                          options=list(range(1, 3)),  # 1-5회
+                                          index=current_repeat-1,  # 0-based index
+                                          key="third_repeat")
+                # 배속을 선택박스로 변경
+                speed_key = f"{settings['third_lang']}_speed"
+                current_speed = round(float(settings.get(speed_key, 1.2)), 1)
+                current_speed = max(0.8, min(current_speed, 4.0))
+                try:
+                    speed_index = speed_options.index(current_speed)
+                except ValueError:
+                    speed_index = speed_options.index(1.2)
+                settings[speed_key] = st.selectbox("음성 속도(배)",
+                                         options=speed_options,
+                                         index=speed_index,
+                                         key="third_speed")
+            else:
+                # 'none'일 때는 재생 횟수를 0으로 설정
+                settings['third_repeat'] = 0
 
         # 문장 재생 설정
         st.subheader("문장 재생")
@@ -524,7 +524,7 @@ def create_settings_ui(return_to_learning=False):
         time_options = [round(x * 0.1, 1) for x in range(1, 21)]  # 0.1-2.0초
         
         with col1:
-            current_spacing = round(float(settings.get('spacing', 1.0)), 1)  # 기본값 1.0
+            current_spacing = round(float(settings.get('spacing', 1.0)), 1)
             current_spacing = max(0.1, min(current_spacing, 2.0))
             try:
                 spacing_index = time_options.index(current_spacing)
@@ -536,7 +536,7 @@ def create_settings_ui(return_to_learning=False):
                                             key="spacing")
 
         with col2:
-            current_delay = round(float(settings.get('subtitle_delay', 1.0)), 1)  # 기본값 1.0
+            current_delay = round(float(settings.get('subtitle_delay', 1.0)), 1)
             current_delay = max(0.1, min(current_delay, 2.0))
             try:
                 delay_index = time_options.index(current_delay)
@@ -548,7 +548,7 @@ def create_settings_ui(return_to_learning=False):
                                                    key="subtitle_delay")
 
         with col3:
-            current_next = round(float(settings.get('next_sentence_time', 1.0)), 1)  # 기본값 1.0
+            current_next = round(float(settings.get('next_sentence_time', 1.0)), 1)
             current_next = max(0.1, min(current_next, 2.0))
             try:
                 next_index = time_options.index(current_next)
@@ -612,7 +612,7 @@ def create_settings_ui(return_to_learning=False):
                                                         max_value=50,
                                                         step=1,
                                                         key="english_font_size_learning")
-            default_color = 'green'  # 기본값을 초록색으로 변경
+            default_color = 'ivory'  # 기본값을 아이보리로 변경
             selected_color = st.selectbox("영어",
                                         options=list(COLOR_MAPPING.keys()),
                                         index=list(COLOR_MAPPING.keys()).index(default_color),
@@ -711,15 +711,23 @@ def create_settings_ui(return_to_learning=False):
         # 저장/취소 버튼
         col1, col2 = st.columns([0.8, 0.2])
         with col1:
-            if st.button("💾 저장 후 학습 재개", type="primary"):
+            if st.button("💾 저장 후 학습 재개", type="primary", key="save_and_return"):
                 save_settings(settings)
                 if return_to_learning:
                     st.session_state.page = 'learning'
                     st.rerun()
+                else:
+                    # 일반 설정 화면에서는 settings 페이지로
+                    st.session_state.page = 'settings'
+                    st.rerun()
         with col2:
-            if st.button("❌ 취소"):
+            if st.button("❌ 취소", key="cancel_button"):
                 if return_to_learning:
                     st.session_state.page = 'learning'
+                    st.rerun()
+                else:
+                    # 일반 설정 화면에서는 settings 페이지로
+                    st.session_state.page = 'settings'
                     st.rerun()
 
         # 저장/취소 버튼 스타일
@@ -962,10 +970,14 @@ async def start_learning():
             
             # 상태 표시
             status.markdown(
-                f'<span style="color: red">{sentence_number_display}</span> | '
-                f'<span style="color: #00FF00">{i+1}/{total_sentences}</span> | '
-                f'<span style="color: #00FF00">{speed_display}</span> | '
-                f'<span style="color: red">학습: {int((current_time - st.session_state.start_time) / 60):02d}분</span> | '
+                f'<span style="color: red">{sentence_number_display}</span> '
+                f'<span class="separator">•</span> '
+                f'<span style="color: #00FF00">{i+1}/{total_sentences}</span> '
+                f'<span class="separator">•</span> '
+                f'<span style="color: #00FF00">{speed_display}</span> '
+                f'<span class="separator">•</span> '
+                f'<span style="color: red">학습: {int((current_time - st.session_state.start_time) / 60):02d}분</span> '
+                f'<span class="separator">•</span> '
                 f'<span style="color: #00FF00">오늘: {st.session_state.today_total_study_time:02d}분</span>',
                 unsafe_allow_html=True
             )
@@ -1000,17 +1012,18 @@ async def start_learning():
                 (settings['second_lang'], settings['second_repeat']),
                 (settings['third_lang'], settings['third_repeat'])
             ]):
-                if not settings['hide_subtitles'][f'{["first", "second", "third"][rank]}_lang']:
-                    text = lang_mapping[lang]['text']
-                    font = settings.get(f'{lang}_font', 'Arial')
-                    color = settings.get(f'{lang}_color', '#00FF00')
-                    size = settings.get(f'{lang}_font_size', 28)
-                    
-                    subtitles[rank].markdown(
-                        f'<div class="{lang}-text" style="font-family: {font}; '
-                        f'color: {color}; font-size: {size}px;">{text}</div>',
-                        unsafe_allow_html=True
-                    )
+                if lang != 'none':  # 'none'이 아닌 경우만 자막 표시
+                    if not settings['hide_subtitles'][f'{["first", "second", "third"][rank]}_lang']:
+                        text = lang_mapping[lang]['text']
+                        font = settings.get(f'{lang}_font', 'Arial')
+                        color = settings.get(f'{lang}_color', '#00FF00')
+                        size = settings.get(f'{lang}_font_size', 28)
+                        
+                        subtitles[rank].markdown(
+                            f'<div class="{lang}-text" style="font-family: {font}; '
+                            f'color: {color}; font-size: {size}px;">{text}</div>',
+                            unsafe_allow_html=True
+                        )
 
             # 순위별 음성 재생
             for lang, repeat in [
