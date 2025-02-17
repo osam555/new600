@@ -340,7 +340,7 @@ def create_settings_ui(return_to_learning=False):
         settings = st.session_state.settings
         col1, col2 = st.columns([0.7, 0.3])
         with col1:
-            st.markdown('<h1 style="font-size: 1.5rem; color: #FF0000;">도파민 대충영어 : 2배 한국어</h1>', unsafe_allow_html=True)
+            st.markdown('<h1 style="font-size: 1.5rem; color: #00FF00;">도파민 대충영어 : 2배 한국어</h1>', unsafe_allow_html=True)
         with col2:
             # 엑셀 파일에서 시트 선택 및 최대 행 수 가져오기
             try:
@@ -521,6 +521,12 @@ def create_settings_ui(return_to_learning=False):
                 # 'none'일 때는 재생 횟수를 0으로 설정
                 settings['third_repeat'] = 0
         
+        # 새로운 학습 시작 버튼 추가 (자막|음성|속도 섹션 아래)
+        if st.button("▶️ 학습 시작", use_container_width=True, key="start_btn_middle"):
+            save_settings(settings)
+            st.session_state.page = 'learning'
+            st.rerun()
+
         # 문장 재생 설정
         st.subheader("문장 재생")
         col1, col2, col3, col4 = st.columns(4)
@@ -713,8 +719,8 @@ def create_settings_ui(return_to_learning=False):
             </style>
         """, unsafe_allow_html=True)
 
-        # 학습 시작 버튼 추가 - 자막|음성|속도 섹션 바로 아래에 추가
-        if st.button("▶️ 학습 시작", use_container_width=True, key="start_btn"):
+        # 기존 맨 아래 학습 시작 버튼 유지
+        if st.button("▶️ 학습 시작", use_container_width=True, key="start_btn_bottom"):
             save_settings(settings)
             st.session_state.page = 'learning'
             st.rerun()
