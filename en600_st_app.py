@@ -393,7 +393,7 @@ def create_settings_ui(return_to_learning=False):
         """, unsafe_allow_html=True)
 
         # 문장 범위 선택 UI 개선
-        st.subheader("문장 범위 선택")
+        st.subheader("문장 범위 선택(총 600문장")
         col1, col2 = st.columns(2)
         
         with col1:
