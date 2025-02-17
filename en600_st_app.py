@@ -372,6 +372,12 @@ def create_settings_ui(return_to_learning=False):
                 st.error(f"엑셀 파일 읽기 오류: {e}")
                 return
             
+            # 학습 시작 버튼 추가 (이전 위치)
+            if st.button("▶️ 학습 시작", use_container_width=True, key="start_btn_top"):
+                save_settings(settings)
+                st.session_state.page = 'learning'
+                st.rerun()
+
         # 학습 시작 버튼 스타일
         st.markdown("""
             <style>
@@ -385,6 +391,50 @@ def create_settings_ui(return_to_learning=False):
                 }
             </style>
         """, unsafe_allow_html=True)
+
+        # 문장 범위 선택 UI 개선
+        st.subheader("문장 범위 선택")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # 시작 번호 선택
+            start_options = list(range(1, max_row + 1, 20))
+            current_start = min(start_options, key=lambda x: abs(x - settings['start_row']))
+            settings['start_row'] = st.selectbox(
+                "시작 번호",
+                options=start_options,
+                index=start_options.index(current_start),
+                key="start_row_select"
+            )
+        
+        with col2:
+            # 범위 선택 (20개 또는 50개 단위)
+            range_options = {
+                "20문장": 20,
+                "50문장": 50,
+                "100문장": 100,
+                "직접 입력": 0
+            }
+            selected_range = st.selectbox(
+                "문장 개수",
+                options=list(range_options.keys()),
+                key="range_select"
+            )
+            
+            if selected_range == "직접 입력":
+                settings['end_row'] = st.number_input(
+                    "종료 번호",
+                    value=min(settings['start_row'] + 19, max_row),
+                    min_value=settings['start_row'],
+                    max_value=max_row,
+                    key="end_row_input"
+                )
+            else:
+                range_value = range_options[selected_range]
+                settings['end_row'] = min(settings['start_row'] + range_value - 1, max_row)
+
+        # 선택된 범위 표시
+        st.info(f"선택된 범위: {settings['start_row']} ~ {settings['end_row']} (총 {settings['end_row'] - settings['start_row'] + 1}문장)")
 
         # 언어 순위 설정
         st.subheader("자막 | 음성 | 속도")
