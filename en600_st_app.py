@@ -340,7 +340,7 @@ def create_settings_ui(return_to_learning=False):
         settings = st.session_state.settings
         col1, col2 = st.columns([0.7, 0.3])
         with col1:
-            st.markdown('<h1 style="font-size: 1.5rem; color: #00FF00;">도파민 대충영어 : 2배 한국어</h1>', unsafe_allow_html=True)
+            st.markdown('<h1 style="font-size: 2rem; color: #FF0000;">도파민 대충영어 😻 2배 한국어</h1>', unsafe_allow_html=True)
         with col2:
             # 엑셀 파일에서 시트 선택 및 최대 행 수 가져오기
             try:
