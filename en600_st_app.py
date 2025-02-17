@@ -350,7 +350,7 @@ def create_settings_ui(return_to_learning=False):
                 
                 # 시트 선택 (기본값: 첫 번째 시트)
                 selected_sheet = st.selectbox(
-                    "학습 시트 선택",
+                    "주제: 생활영어 | 여행영어 | 천일문",
                     options=sheet_names,
                     index=0,
                     key="sheet_select"
