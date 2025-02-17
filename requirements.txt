@@ -7,4 +7,4 @@ Pillow==10.1.0
 gTTS==2.3.2
 pydub==0.25.1
 openpyxl
-
+librosa
