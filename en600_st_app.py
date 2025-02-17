@@ -397,22 +397,27 @@ def create_settings_ui(return_to_learning=False):
         col1, col2 = st.columns(2)
         
         with col1:
-            # 시작 번호 선택
-            start_options = list(range(1, max_row + 1, 20))
-            current_start = min(start_options, key=lambda x: abs(x - settings['start_row']))
-            settings['start_row'] = st.selectbox(
-                "시작 번호",
-                options=start_options,
-                index=start_options.index(current_start),
-                key="start_row_select"
+            # 과 선택 (1~30과)
+            lesson_options = [f"{i}과({(i-1)*20+1}~{i*20}번)" for i in range(1, 31)]
+            current_lesson = (settings['start_row'] - 1) // 20 + 1  # 현재 과 계산
+            selected_lesson = st.selectbox(
+                "과 선택",
+                options=lesson_options,
+                index=current_lesson-1,
+                key="lesson_select"
             )
+            
+            # 선택된 과에서 시작 번호 계산
+            lesson_num = int(selected_lesson.split('과')[0])
+            settings['start_row'] = (lesson_num - 1) * 20 + 1
+            settings['end_row'] = lesson_num * 20
         
         with col2:
             # 범위 선택 (20개 또는 50개 단위)
             range_options = {
-                "20문장": 20,
-                "50문장": 50,
-                "100문장": 100,
+                "20문장(1과)": 20,
+                "40문장(2과)": 40,
+                "60문장(3과)": 60,
                 "직접 입력": 0
             }
             selected_range = st.selectbox(
