@@ -264,27 +264,11 @@ def create_settings_ui(return_to_learning=False):
         settings['final_sound_enabled'] = selected_duration != '없음'
         settings['final_sound_duration'] = final_sound_mapping[selected_duration]
 
-        # 저장/취소 버튼
-        col1, col2 = st.columns([0.8, 0.2])
-        with col1:
-            if st.button("💾 저장 후 학습 재개", type="primary", key="save_and_return"):
-                save_settings(settings)
-                if return_to_learning:
-                    st.session_state.page = 'learning'
-                    st.rerun()
-                else:
-                    # 일반 설정 화면에서는 settings 페이지로
-                    st.session_state.page = 'settings'
-                    st.rerun()
-        with col2:
-            if st.button("❌ 취소", key="cancel_button"):
-                if return_to_learning:
-                    st.session_state.page = 'learning'
-                    st.rerun()
-                else:
-                    # 일반 설정 화면에서는 settings 페이지로
-                    st.session_state.page = 'settings'
-                    st.rerun()
+        # 학습 시작 버튼 추가
+        if st.button("▶️ 학습 시작", use_container_width=True, key="start_btn_learning"):
+            save_settings(settings)
+            st.session_state.page = 'learning'
+            st.rerun()
     else:
         # 기본 설정 모드 - 전체 UI
         # 다크 모드 감지
@@ -358,23 +342,36 @@ def create_settings_ui(return_to_learning=False):
         with col1:
             st.markdown('<h1 style="font-size: 1.5rem; color: #FF0000;">도파민 대충영어 : 2배 한국어</h1>', unsafe_allow_html=True)
         with col2:
-            # 엑셀 파일에서 최대 행 수 가져오기
+            # 엑셀 파일에서 시트 선택 및 최대 행 수 가져오기
             try:
+                # 엑셀 파일 전체 읽기
+                excel_file = pd.ExcelFile(EXCEL_PATH)
+                sheet_names = excel_file.sheet_names[:3]  # 처음 3개의 시트만 사용
+                
+                # 시트 선택 (기본값: 첫 번째 시트)
+                selected_sheet = st.selectbox(
+                    "학습 시트 선택",
+                    options=sheet_names,
+                    index=0,
+                    key="sheet_select"
+                )
+                
+                # 선택된 시트 데이터 읽기
                 df = pd.read_excel(
                     EXCEL_PATH,
+                    sheet_name=selected_sheet,
                     header=None,
                     engine='openpyxl'
                 )
                 max_row = len(df)
+                
+                # 선택된 시트 정보를 설정에 저장
+                settings['selected_sheet'] = selected_sheet
+                
             except Exception as e:
                 st.error(f"엑셀 파일 읽기 오류: {e}")
                 return
             
-        # 학습 시작 버튼 (첫 화면에서만 표시)
-        if st.button("▶️ 학습 시작", use_container_width=True, key="start_btn"):
-            st.session_state.page = 'learning'
-            st.rerun()
-
         # 학습 시작 버튼 스타일
         st.markdown("""
             <style>
@@ -383,53 +380,11 @@ def create_settings_ui(return_to_learning=False):
                     width: 100% !important;
                     height: 3em !important;
                     font-size: 1.2rem !important;
+                    background-color: #00FF00 !important;
+                    color: black !important;
                 }
             </style>
         """, unsafe_allow_html=True)
-
-        # 문장 범위 선택 UI 개선
-        st.subheader("문장 범위 선택")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # 시작 번호 선택
-            start_options = list(range(1, max_row + 1, 20))
-            current_start = min(start_options, key=lambda x: abs(x - settings['start_row']))
-            settings['start_row'] = st.selectbox(
-                "시작 번호",
-                options=start_options,
-                index=start_options.index(current_start),
-                key="start_row_select"
-            )
-        
-        with col2:
-            # 범위 선택 (20개 또는 50개 단위)
-            range_options = {
-                "20문장": 20,
-                "50문장": 50,
-                "100문장": 100,
-                "직접 입력": 0
-            }
-            selected_range = st.selectbox(
-                "문장 개수",
-                options=list(range_options.keys()),
-                key="range_select"
-            )
-            
-            if selected_range == "직접 입력":
-                settings['end_row'] = st.number_input(
-                    "종료 번호",
-                    value=min(settings['start_row'] + 19, max_row),
-                    min_value=settings['start_row'],
-                    max_value=max_row,
-                    key="end_row_input"
-                )
-            else:
-                range_value = range_options[selected_range]
-                settings['end_row'] = min(settings['start_row'] + range_value - 1, max_row)
-
-        # 선택된 범위 표시
-        st.info(f"선택된 범위: {settings['start_row']} ~ {settings['end_row']} (총 {settings['end_row'] - settings['start_row'] + 1}문장)")
 
         # 언어 순위 설정
         st.subheader("자막 | 음성 | 속도")
@@ -515,7 +470,7 @@ def create_settings_ui(return_to_learning=False):
             else:
                 # 'none'일 때는 재생 횟수를 0으로 설정
                 settings['third_repeat'] = 0
-
+        
         # 문장 재생 설정
         st.subheader("문장 재생")
         col1, col2, col3, col4 = st.columns(4)
@@ -708,43 +663,11 @@ def create_settings_ui(return_to_learning=False):
             </style>
         """, unsafe_allow_html=True)
 
-        # 저장/취소 버튼
-        col1, col2 = st.columns([0.8, 0.2])
-        with col1:
-            if st.button("💾 저장 후 학습 재개", type="primary", key="save_and_return"):
-                save_settings(settings)
-                if return_to_learning:
-                    st.session_state.page = 'learning'
-                    st.rerun()
-                else:
-                    # 일반 설정 화면에서는 settings 페이지로
-                    st.session_state.page = 'settings'
-                    st.rerun()
-        with col2:
-            if st.button("❌ 취소", key="cancel_button"):
-                if return_to_learning:
-                    st.session_state.page = 'learning'
-                    st.rerun()
-                else:
-                    # 일반 설정 화면에서는 settings 페이지로
-                    st.session_state.page = 'settings'
-                    st.rerun()
-
-        # 저장/취소 버튼 스타일
-        st.markdown("""
-            <style>
-                /* 저장 버튼 스타일 */
-                div[data-testid="stButton"] > button:first-child {
-                    background-color: #00FF00 !important;
-                    color: black !important;
-                }
-                /* 취소 버튼 스타일 */
-                div[data-testid="stButton"] > button:last-child {
-                    background-color: #FF0000 !important;
-                    color: white !important;
-                }
-            </style>
-        """, unsafe_allow_html=True)
+        # 학습 시작 버튼 추가 - 자막|음성|속도 섹션 바로 아래에 추가
+        if st.button("▶️ 학습 시작", use_container_width=True, key="start_btn"):
+            save_settings(settings)
+            st.session_state.page = 'learning'
+            st.rerun()
 
 def get_voice_mapping(language, voice_setting):
     """안전하게 음성 매핑을 가져오는 함수"""
@@ -850,11 +773,11 @@ async def start_learning():
     sentence_count = 0
     repeat_count = 0
     
-    # 엑셀에서 문장 가져오기
     try:
-        # 엑셀 파일 읽기
+        # 선택된 시트의 데이터 읽기
         df = pd.read_excel(
             EXCEL_PATH,
+            sheet_name=settings.get('selected_sheet', 0),  # 기본값: 첫 번째 시트
             header=None,
             engine='openpyxl'
         )
@@ -1134,7 +1057,6 @@ def create_personalized_ui():
         options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
         index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(st.session_state.user_language)
     )
-
     # 선택한 언어를 세션 상태에 저장
     if selected_language != st.session_state.user_language:
         st.session_state.user_language = selected_language
