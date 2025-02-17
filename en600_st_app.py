@@ -418,6 +418,7 @@ def create_settings_ui(return_to_learning=False):
                 "20문장(1과)": 20,
                 "40문장(2과)": 40,
                 "60문장(3과)": 60,
+                "100문장(5과)": 100,
                 "직접 입력": 0
             }
             selected_range = st.selectbox(
