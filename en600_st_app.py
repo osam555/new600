@@ -17,6 +17,7 @@ import base64
 from gtts import gTTS
 from pydub import AudioSegment
 import io
+import librosa
 
 ## streamlit run en600st/en600_st_app.py
 
@@ -754,26 +755,33 @@ def get_voice_mapping(language, voice_setting):
         # 기본값 반환
         return VOICE_MAPPING[language][default_voices[language]]
 
-async def create_audio(text, voice, speed=1.0):
-    """음성 파일 생성 함수 수정"""
+async def get_voice_file(text, voice, speed=1.0, output_file=None):
     try:
-        if not text or not voice:
-            return None
-
-        output_file = TEMP_DIR / f"temp_{int(time.time()*1000)}.wav"
-        
-        # 속도 설정을 percentage로 변환
-        if speed > 1:
-            rate_str = f"+{int((speed - 1) * 100)}%"
+        # 한국어 고속 재생을 위한 처리
+        if voice.startswith("ko-") and speed > 3.0:
+            # 3배속 이상일 때 특수 처리
+            actual_speed = min(speed / 2, 3.0)  # 실제 TTS 속도는 3배속까지만
+            communicate = edge_tts.Communicate(text, voice, rate=f"+{int((actual_speed-1)*100)}%")
         else:
-            rate_str = f"-{int((1 - speed) * 100)}%"
+            # 일반적인 경우
+            communicate = edge_tts.Communicate(text, voice, rate=f"+{int((speed-1)*100)}%")
 
-        communicate = edge_tts.Communicate(text, voice, rate=rate_str)
+        if output_file is None:
+            output_file = TEMP_DIR / f"temp_{voice}_{speed}_{hash(text)}.wav"
+
         await communicate.save(str(output_file))
-        return str(output_file)
+        
+        # 한국어 고속 재생을 위한 후처리
+        if voice.startswith("ko-") and speed > 3.0:
+            # 오디오 파일 처리로 추가 배속
+            y, sr = sf.read(str(output_file))
+            speed_factor = speed / actual_speed
+            y_fast = librosa.effects.time_stretch(y, rate=speed_factor)
+            sf.write(str(output_file), y_fast, sr)
 
+        return str(output_file)
     except Exception as e:
-        st.error(f"음성 생성 오류: {str(e)}")
+        st.error(f"음성 파일 생성 오류: {str(e)}")
         return None
 
 def create_learning_ui():
@@ -827,7 +835,7 @@ async def create_break_audio():
     """브레이크 음성 생성"""
     break_msg = "쉬어가는 시간입니다, 5초간의 호흡을 느껴보세요"
     break_voice = VOICE_MAPPING['korean']['선희']
-    audio_file = await create_audio(break_msg, break_voice, 1.0)
+    audio_file = await get_voice_file(break_msg, break_voice, 1.0)
     return audio_file
 
 async def start_learning():
@@ -1018,7 +1026,7 @@ async def start_learning():
                 (settings['third_lang'], settings['third_repeat'])
             ]:
                 for _ in range(repeat):
-                    audio_file = await create_audio(
+                    audio_file = await get_voice_file(
                         lang_mapping[lang]['text'],
                         lang_mapping[lang]['voice'],
                         lang_mapping[lang]['speed']
@@ -1029,7 +1037,7 @@ async def start_learning():
                         if _ < repeat - 1:
                             await asyncio.sleep(settings['spacing'])
                     elif lang == 'vietnamese':
-                        # 베트남어는 create_audio에서 HTML/JS로 바로 재생되므로,
+                        # 베트남어는 get_voice_file에서 HTML/JS로 바로 재생되므로,
                         # 여기서는 아무것도 하지 않음
                         duration = len(lang_mapping[lang]['text']) * 0.1  # 대략적인 시간
                         await asyncio.sleep(duration)
@@ -1057,7 +1065,7 @@ async def start_learning():
                     
                     # 2. 브레이크 음성 메시지 생성 및 재생
                     break_msg = "쉬어가는 시간입니다, 5초간의 호흡을 느껴보세요"
-                    break_audio = await create_audio(break_msg, VOICE_MAPPING['korean']['선희'], 1.0)
+                    break_audio = await get_voice_file(break_msg, VOICE_MAPPING['korean']['선희'], 1.0)
                     if break_audio:
                         play_audio(break_audio)
                         # 음성 메시지 재생 시간 계산 (대략적으로 메시지 길이에 따라)
