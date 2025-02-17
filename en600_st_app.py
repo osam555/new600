@@ -760,7 +760,7 @@ async def get_voice_file(text, voice, speed=1.0, output_file=None):
         # 한국어 고속 재생을 위한 처리
         if voice.startswith("ko-") and speed > 3.0:
             # 3배속 이상일 때 특수 처리
-            actual_speed = min(speed / 2, 3.0)  # 실제 TTS 속도는 3배속까지만
+            actual_speed = 2.0  # TTS 속도를 2배속으로 고정
             communicate = edge_tts.Communicate(text, voice, rate=f"+{int((actual_speed-1)*100)}%")
         else:
             # 일반적인 경우
@@ -775,9 +775,18 @@ async def get_voice_file(text, voice, speed=1.0, output_file=None):
         if voice.startswith("ko-") and speed > 3.0:
             # 오디오 파일 처리로 추가 배속
             y, sr = sf.read(str(output_file))
-            speed_factor = speed / actual_speed
+            speed_factor = speed / actual_speed  # 실제 배속 비율 계산
+            
+            # librosa로 배속 처리
             y_fast = librosa.effects.time_stretch(y, rate=speed_factor)
-            sf.write(str(output_file), y_fast, sr)
+            
+            # 볼륨 정규화 및 증폭
+            y_norm = librosa.util.normalize(y_fast) * 1.5  # 볼륨을 1.5배로 증폭
+            
+            # 클리핑 방지
+            y_norm = np.clip(y_norm, -1.0, 1.0)
+            
+            sf.write(str(output_file), y_norm, sr)
 
         return str(output_file)
     except Exception as e:
