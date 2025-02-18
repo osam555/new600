@@ -20,7 +20,7 @@ from pydub import AudioSegment
 import io
 import librosa
 
-## ㅊ
+## streamlit run en600st/en600_st_app.py
 
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -303,11 +303,13 @@ def create_settings_ui(return_to_learning=False):
         st.markdown("""
             <style>
                 /* 서브헤더 스타일 수정 */
+                section[tabindex="0"] h2,
+                section[data-testid="stSidebar"] h2,
+                .element-container h2,
                 .stMarkdown h2,
-                .streamlit-expanderHeader,
-                [data-testid="stSidebarNav"] h2,
                 div[data-testid="stMarkdownContainer"] h2,
-                .st-emotion-cache-1629p8f h2 {
+                .st-emotion-cache-1629p8f h2,
+                .st-emotion-cache-1y4p8pa {
                     font-size: 1.2rem !important;
                     color: #00FF00 !important;  /* 초록색으로 변경 */
                     border-bottom: 2px solid #00FF00 !important;  /* 초록색 밑줄 추가 */
@@ -558,7 +560,7 @@ def create_settings_ui(return_to_learning=False):
                 delay_index = time_options.index(current_delay)
             except ValueError:
                 delay_index = time_options.index(1.0)  # 기본값 1.0초
-            settings['subtitle_delay'] = st.selectbox("자막 딜레이(초)",
+            settings['subtitle_delay'] = st.selectbox("자막 먼저(초)",
                                                    options=time_options,
                                                    index=delay_index,
                                                    key="subtitle_delay")
@@ -1006,53 +1008,70 @@ async def start_learning():
                 </style>
             """, unsafe_allow_html=True)
 
-            # 순위별 자막 표시
-            for rank, (lang, repeat) in enumerate([
-                (settings['first_lang'], settings['first_repeat']),
-                (settings['second_lang'], settings['second_repeat']),
-                (settings['third_lang'], settings['third_repeat'])
-            ]):
-                if lang != 'none':  # 'none'이 아닌 경우만 자막 표시
-                    if not settings['hide_subtitles'][f'{["first", "second", "third"][rank]}_lang']:
-                        text = lang_mapping[lang]['text']
-                        font = settings.get(f'{lang}_font', 'Arial')
-                        color = settings.get(f'{lang}_color', '#00FF00')
-                        size = settings.get(f'{lang}_font_size', 28)
-                        
-                        subtitles[rank].markdown(
-                            f'<div class="{lang}-text" style="font-family: {font}; '
-                            f'color: {color}; font-size: {size}px;">{text}</div>',
-                            unsafe_allow_html=True
-                        )
+            # 1순위 자막 표시
+            first_lang = settings['first_lang']
+            if first_lang != 'none':
+                # 1순위 자막 표시
+                subtitles[0].markdown(
+                    f'<div class="{first_lang}-text" style="font-family: {settings.get(f"{first_lang}_font", "Arial")}; '
+                    f'color: {settings.get(f"{first_lang}_color", "#00FF00")}; '
+                    f'font-size: {settings.get(f"{first_lang}_font_size", 28)}px;">'
+                    f'{lang_mapping[first_lang]["text"]}</div>',
+                    unsafe_allow_html=True
+                )
 
-            # 순위별 음성 재생
-            for lang, repeat in [
-                (settings['first_lang'], settings['first_repeat']),
-                (settings['second_lang'], settings['second_repeat']),
-                (settings['third_lang'], settings['third_repeat'])
-            ]:
-                for _ in range(repeat):
+                # 자막 간격 적용 (1초)
+                await asyncio.sleep(settings['spacing'])
+
+            # 2순위 자막 표시 및 음성 재생
+            second_lang = settings['second_lang']
+            if second_lang != 'none':
+                # 2순위 자막 표시
+                subtitles[1].markdown(
+                    f'<div class="{second_lang}-text" style="font-family: {settings.get(f"{second_lang}_font", "Arial")}; '
+                    f'color: {settings.get(f"{second_lang}_color", "#00FF00")}; '
+                    f'font-size: {settings.get(f"{second_lang}_font_size", 28)}px;">'
+                    f'{lang_mapping[second_lang]["text"]}</div>',
+                    unsafe_allow_html=True
+                )
+
+                # 2순위 음성 재생
+                for _ in range(settings['second_repeat']):
                     audio_file = await get_voice_file(
-                        lang_mapping[lang]['text'],
-                        lang_mapping[lang]['voice'],
-                        lang_mapping[lang]['speed']
+                        lang_mapping[second_lang]['text'],
+                        lang_mapping[second_lang]['voice'],
+                        lang_mapping[second_lang]['speed']
                     )
                     if audio_file:
-                        # edge-tts로 생성된 파일은 play_audio로 재생
-                        play_audio(audio_file)
-                        if _ < repeat - 1:
-                            await asyncio.sleep(settings['spacing'])
-                    elif lang == 'vietnamese':
-                        # 베트남어는 get_voice_file에서 HTML/JS로 바로 재생되므로,
-                        # 여기서는 아무것도 하지 않음
-                        duration = len(lang_mapping[lang]['text']) * 0.1  # 대략적인 시간
-                        await asyncio.sleep(duration)
-                        if _ < repeat - 1:
-                            await asyncio.sleep(settings['spacing'])
+                        await play_audio_file(audio_file)
+                        await wait_for_audio_complete(audio_file)
+                    if _ < settings['second_repeat'] - 1:
+                        await asyncio.sleep(settings['spacing'])
 
-                    else:
-                        if _ < repeat - 1:
-                            await asyncio.sleep(settings['spacing'])
+            # 3순위 자막 표시 및 음성 재생
+            third_lang = settings['third_lang']
+            if third_lang != 'none':
+                # 3순위 자막 표시
+                subtitles[2].markdown(
+                    f'<div class="{third_lang}-text" style="font-family: {settings.get(f"{third_lang}_font", "Arial")}; '
+                    f'color: {settings.get(f"{third_lang}_color", "#00FF00")}; '
+                    f'font-size: {settings.get(f"{third_lang}_font_size", 28)}px;">'
+                    f'{lang_mapping[third_lang]["text"]}</div>',
+                    unsafe_allow_html=True
+                )
+
+                # 3순위 음성 재생
+                for _ in range(settings['third_repeat']):
+                    audio_file = await get_voice_file(
+                        lang_mapping[third_lang]['text'],
+                        lang_mapping[third_lang]['voice'],
+                        lang_mapping[third_lang]['speed']
+                    )
+                    if audio_file:
+                        await play_audio_file(audio_file)
+                        await wait_for_audio_complete(audio_file)
+                    if _ < settings['third_repeat'] - 1:
+                        await asyncio.sleep(settings['spacing'])
 
             # 다음 문장으로 넘어가기 전 대기
             await asyncio.sleep(settings['next_sentence_time'])
@@ -1066,14 +1085,14 @@ async def start_learning():
                     # 1. 먼저 break.wav 알림음 재생
                     break_sound_path = SCRIPT_DIR / 'base/break.wav'
                     if break_sound_path.exists():
-                        play_audio(str(break_sound_path))
+                        await play_audio_file(str(break_sound_path))
                         await asyncio.sleep(1)  # 알림음이 완전히 재생될 때까지 대기
                     
                     # 2. 브레이크 음성 메시지 생성 및 재생
                     break_msg = "쉬어가는 시간입니다, 5초간의 호흡을 느껴보세요"
                     break_audio = await get_voice_file(break_msg, VOICE_MAPPING['korean']['선희'], 1.0)
                     if break_audio:
-                        play_audio(break_audio)
+                        await play_audio_file(break_audio)
                         # 음성 메시지 재생 시간 계산 (대략적으로 메시지 길이에 따라)
                         await asyncio.sleep(3)  # 메시지가 재생될 때까지 대기
                     
@@ -1103,7 +1122,7 @@ async def start_learning():
             # final.wav 재생
             final_sound_path = SCRIPT_DIR / 'base/final.wav'
             if final_sound_path.exists():
-                play_audio(str(final_sound_path))
+                await play_audio_file(str(final_sound_path))
                 await asyncio.sleep(1)
             
             if settings['auto_repeat']:
@@ -1128,12 +1147,11 @@ def create_personalized_ui():
     """개인별 맞춤 UI 생성"""
     st.title("개인별 설정 기억하기")
 
-    # 언어 선택
-    selected_language = st.selectbox(
-        "사용할 언어를 선택하세요",
-        options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
-        index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(st.session_state.user_language)
-    )
+    # 언어 선택 - 문법 수정
+    selected_language = st.selectbox
+    "사용할 언어를 선택하세요",
+    options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
+    index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(st.session_state.user_language)
     # 선택한 언어를 세션 상태에 저장
     if selected_language != st.session_state.user_language:
         st.session_state.user_language = selected_language
@@ -1366,6 +1384,28 @@ def handle_resume_learning(df):
     except Exception as e:
         st.error(f"학습 재개 중 오류 발생: {str(e)}")
         return 0
+
+async def play_audio_file(file_path):
+    """음성 파일 재생"""
+    try:
+        play_audio(file_path)  # 기존의 play_audio 함수 사용
+    except Exception as e:
+        st.error(f"음성 재생 오류: {str(e)}")
+
+async def wait_for_audio_complete(file_path=None):
+    """음성 재생 완료 대기"""
+    try:
+        if file_path and os.path.exists(file_path):
+            with wave.open(file_path, 'rb') as wav_file:
+                frames = wav_file.getnframes()
+                rate = wav_file.getframerate()
+                duration = frames / float(rate)
+                await asyncio.sleep(duration)
+        else:
+            await asyncio.sleep(0.5)
+    except Exception:
+        # 기본 대기 시간
+        await asyncio.sleep(0.5)
 
 if __name__ == "__main__":
     main()
