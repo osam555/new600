@@ -128,9 +128,12 @@ def initialize_session_state():
         'first_lang': 'korean',     # 1순위 한국어
         'second_lang': 'english',   # 2순위 영어
         'third_lang': 'english',    # 3순위 영어
-        'first_repeat': 1,
-        'second_repeat': 1,
-        'third_repeat': 1,
+        'first_repeat': 1,          # 1순위 1회
+        'second_repeat': 1,         # 2순위 1회
+        'third_repeat': 1,          # 3순위 1회
+        'first_voice': '선희',      # 1순위 선희
+        'second_voice': 'Steffan (US)',  # 2순위 스테판
+        'third_voice': 'Jenny (US)',     # 3순위 제니
         'first_lang_speed': 2.0,    # 1순위 2.0배
         'second_lang_speed': 2.0,   # 2순위 2.0배
         'third_lang_speed': 3.0,    # 3순위 3.0배
@@ -837,8 +840,8 @@ def get_voice_mapping(language, voice_setting):
     try:
         # 기본값 설정
         default_voices = {
-            'korean': '선희',
-            'english': 'Steffan (US)',  # 국적 코드 추가
+            'korean': '선희',            # 1순위 기본: 선희
+            'english': 'Steffan (US)',   # 2순위 기본: 스테판
             'chinese': 'XiaoxiaoNeural',
             'japanese': 'Nanami',
             'vietnamese': 'HoaiMy',
@@ -847,7 +850,11 @@ def get_voice_mapping(language, voice_setting):
             'russian': 'Dmitry',
             'indonesian': 'Gadis'
         }
-        
+
+        # 3순위 영어일 경우 제니로 설정
+        if language == 'english' and voice_setting is None:
+            return VOICE_MAPPING['english']['Jenny (US)']
+            
         # 해당 언어가 음성 지원되는지 확인
         if language not in VOICE_MAPPING:
             return None
