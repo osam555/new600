@@ -14,12 +14,13 @@ import numpy as np
 import traceback
 import json
 import base64
+
 from gtts import gTTS
 from pydub import AudioSegment
 import io
 import librosa
 
-## streamlit run en600st/en600_st_app.py
+## ㅊ
 
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -298,14 +299,15 @@ def create_settings_ui(return_to_learning=False):
                     'vietnamese_color': '#FFFFFF',
                 })
         
-        # 서브헤더와 구분자 스타일 수정
+        # CSS 스타일 수정 - 서브헤더 색상을 초록색으로 변경
         st.markdown("""
             <style>
                 /* 서브헤더 스타일 수정 */
                 .stMarkdown h2,
                 .streamlit-expanderHeader,
                 [data-testid="stSidebarNav"] h2,
-                div[data-testid="stMarkdownContainer"] h2 {
+                div[data-testid="stMarkdownContainer"] h2,
+                .st-emotion-cache-1629p8f h2 {
                     font-size: 1.2rem !important;
                     color: #00FF00 !important;  /* 초록색으로 변경 */
                     border-bottom: 2px solid #00FF00 !important;  /* 초록색 밑줄 추가 */
@@ -315,7 +317,7 @@ def create_settings_ui(return_to_learning=False):
                     display: inline-block !important;
                 }
 
-                /* 구분자 스타일 */
+                /* 구분자 스타일 유지 */
                 .separator {
                     color: #00FF00 !important;
                     font-size: 1.2rem !important;
@@ -325,15 +327,10 @@ def create_settings_ui(return_to_learning=False):
                     line-height: 1 !important;
                 }
 
-                /* 구분자 컨테이너 스타일 */
+                /* 구분자 컨테이너 스타일 유지 */
                 [data-testid="stMarkdownContainer"] {
                     display: inline !important;
                     white-space: nowrap !important;
-                }
-
-                /* 영어 텍스트 기본 색상 */
-                .english-text {
-                    color: #FFFFF0 !important;  /* 아이보리 색상 */
                 }
             </style>
         """, unsafe_allow_html=True)
