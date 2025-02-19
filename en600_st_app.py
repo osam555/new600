@@ -951,89 +951,54 @@ async def create_break_audio():
 async def start_learning():
     """학습 시작"""
     try:
-        # 시작 시 임시 파일 정리
-        cleanup_temp_files()
-        
-        # 메모리 사용량 모니터링
-        process = psutil.Process()
-        if process.memory_info().rss > 400 * 1024 * 1024:  # 400MB 초과
-            cleanup_temp_files()  # 임시 파일 정리
-            if process.memory_info().rss > 500 * 1024 * 1024:  # 여전히 500MB 초과
-                st.error("메모리 사용량이 너무 높습니다. 더 적은 문장을 선택해주세요.")
-                return
-
         settings = st.session_state.settings
         sentence_count = 0
         repeat_count = 0
         
-        # 선택된 시트의 데이터 읽기 - header=0으로 변경
+        # 선택된 시트의 데이터 읽기
         df = pd.read_excel(
             EXCEL_PATH,
             sheet_name=settings.get('selected_sheet', 0),
-            header=0,  # 첫 행을 헤더로 사용
+            header=0,
             engine='openpyxl'
         )
         start_idx = settings['start_row'] - 1
         end_idx = settings['end_row'] - 1
-        
-        # 모든 언어 열 읽기 (없는 열은 빈 문자열로 채우기)
-        data = {
-            'english': get_column_data(df, 'en-미국', start_idx, end_idx),
-            'korean': get_column_data(df, 'ko-한국', start_idx, end_idx),
-            'chinese': get_column_data(df, 'zh-중국', start_idx, end_idx),
-            'japanese': get_column_data(df, 'ja-일본', start_idx, end_idx),
-            'vietnamese': get_column_data(df, 'vi-베트남', start_idx, end_idx),
-            'filipino': get_column_data(df, 'tl-필리핀', start_idx, end_idx),
-            'thai': get_column_data(df, 'th-태국', start_idx, end_idx),
-            'russian': get_column_data(df, 'ru-러시아', start_idx, end_idx),
-            'uzbek': get_column_data(df, 'uz-우즈벡', start_idx, end_idx),
-            'mongolian': get_column_data(df, 'mn-몽골', start_idx, end_idx),
-            'nepali': get_column_data(df, 'ne-네팔', start_idx, end_idx),
-            'burmese': get_column_data(df, 'my-미얀마', start_idx, end_idx),
-            'indonesian': get_column_data(df, 'id-인니', start_idx, end_idx),
-            'khmer': get_column_data(df, 'km-캄보디아', start_idx, end_idx)
-        }
 
-        total_sentences = len(data['english'])
+        # 기본 언어 데이터 읽기
+        english = df.iloc[start_idx:end_idx+1, df.columns.get_loc('en-미국')].tolist()
+        korean = df.iloc[start_idx:end_idx+1, df.columns.get_loc('ko-한국')].tolist()
+        chinese = df.iloc[start_idx:end_idx+1, df.columns.get_loc('zh-중국')].tolist()
+        japanese = df.iloc[start_idx:end_idx+1, df.columns.get_loc('ja-일본')].tolist()
+        vietnamese = []
+        filipino = []
 
-        # 데이터 언패킹
-        english, korean, chinese, japanese, vietnamese, filipino, thai, russian, \
-        uzbek, mongolian, nepali, burmese, indonesian, khmer = [data[lang] for lang in [
-            'english', 'korean', 'chinese', 'japanese', 'vietnamese', 'filipino',
-            'thai', 'russian', 'uzbek', 'mongolian', 'nepali', 'burmese',
-            'indonesian', 'khmer'
-        ]]
+        # 베트남어와 필리핀어는 있는 경우만 읽기
+        if 'vi-베트남' in df.columns:
+            vietnamese = df.iloc[start_idx:end_idx+1, df.columns.get_loc('vi-베트남')].tolist()
+        else:
+            vietnamese = [""] * (end_idx - start_idx + 1)
 
-        # 학습 UI 생성 및 배속 정보 가져오기
+        if 'tl-필리핀' in df.columns:
+            filipino = df.iloc[start_idx:end_idx+1, df.columns.get_loc('tl-필리핀')].tolist()
+        else:
+            filipino = [""] * (end_idx - start_idx + 1)
+
+        total_sentences = len(english)
+
+        # 학습 UI 생성
         progress, status, subtitles, speed_info = create_learning_ui()
-        
-        # 자막을 위한 빈 컨테이너
-        subtitles = [st.empty() for _ in range(3)]
-        
-        # 이전 문장 자막 저장용 변수
-        prev_subtitles = {'second': None, 'third': None}
 
         while True:
-            for i, (eng, kor, chn, jpn, vn, fil, thai, rus, uzb, mng, nep, bur, ind, khm) in enumerate(zip(
-                english, korean, chinese, japanese, vietnamese, filipino, thai, russian, 
-                uzbek, mongolian, nepali, burmese, indonesian, khmer)):
-                
-                # 언어별 텍스트와 음성 매핑
+            for i, (eng, kor, chn, jpn, vn, fil) in enumerate(zip(english, korean, chinese, japanese, vietnamese, filipino)):
+                # 기본 언어 매핑
                 lang_mapping = {
                     'korean': {'text': kor, 'voice': get_voice_mapping('korean', settings.get('kor_voice')), 'speed': settings.get('korean_speed', 1.2)},
                     'english': {'text': eng, 'voice': get_voice_mapping('english', settings.get('eng_voice')), 'speed': settings.get('english_speed', 1.2)},
                     'chinese': {'text': chn, 'voice': get_voice_mapping('chinese', settings.get('zh_voice')), 'speed': settings.get('chinese_speed', 1.2)},
                     'japanese': {'text': jpn, 'voice': get_voice_mapping('japanese', settings.get('jp_voice')), 'speed': settings.get('japanese_speed', 1.2)},
                     'vietnamese': {'text': vn, 'voice': get_voice_mapping('vietnamese', settings.get('vi_voice')), 'speed': settings.get('vietnamese_speed', 1.2)},
-                    'filipino': {'text': fil, 'voice': get_voice_mapping('filipino', settings.get('fil_voice')), 'speed': settings.get('filipino_speed', 1.2)},
-                    'thai': {'text': thai, 'voice': get_voice_mapping('thai', settings.get('thai_voice')), 'speed': settings.get('thai_speed', 1.2)},
-                    'russian': {'text': rus, 'voice': get_voice_mapping('russian', settings.get('russian_voice')), 'speed': settings.get('russian_speed', 1.2)},
-                    'uzbek': {'text': uzb, 'voice': get_voice_mapping('uzbek', settings.get('uzbek_voice')), 'speed': settings.get('uzbek_speed', 1.2)},
-                    'mongolian': {'text': mng, 'voice': get_voice_mapping('mongolian', settings.get('mongolian_voice')), 'speed': settings.get('mongolian_speed', 1.2)},
-                    'nepali': {'text': nep, 'voice': get_voice_mapping('nepali', settings.get('nepali_voice')), 'speed': settings.get('nepali_speed', 1.2)},
-                    'burmese': {'text': bur, 'voice': get_voice_mapping('burmese', settings.get('burmese_voice')), 'speed': settings.get('burmese_speed', 1.2)},
-                    'indonesian': {'text': ind, 'voice': get_voice_mapping('indonesian', settings.get('indonesian_voice')), 'speed': settings.get('indonesian_speed', 1.2)},
-                    'khmer': {'text': khm, 'voice': get_voice_mapping('khmer', settings.get('khmer_voice')), 'speed': settings.get('khmer_speed', 1.2)}
+                    'filipino': {'text': fil, 'voice': get_voice_mapping('filipino', settings.get('fil_voice')), 'speed': settings.get('filipino_speed', 1.2)}
                 }
 
                 progress.progress((i + 1) / total_sentences)
