@@ -900,29 +900,56 @@ async def get_voice_file(text, voice, speed=1.0, output_file=None):
             communicate = edge_tts.Communicate(text, voice, rate=f"+{int((speed-1)*100)}%")
 
         if output_file is None:
-            output_file = TEMP_DIR / f"temp_{voice}_{speed}_{hash(text)}.wav"
+            # 임시 파일명에 타임스탬프 추가
+            timestamp = int(time.time() * 1000)
+            output_file = TEMP_DIR / f"temp_{voice}_{speed}_{timestamp}.wav"
 
+        # 파일이 이미 존재하면 삭제
+        if os.path.exists(output_file):
+            os.remove(output_file)
+
+        # edge-tts로 음성 파일 생성
         await communicate.save(str(output_file))
         
-        # 오디오 처리
-        y, sr = sf.read(str(output_file))
-        
-        # 영어 음성인 경우 볼륨 증가
-        if voice.startswith("en-"):
-            y = y * 1.5  # 볼륨 50% 증가
-            y = np.clip(y, -1.0, 1.0)  # 클리핑 방지
-        
-        # 한국어 고속 재생을 위한 후처리
-        if voice.startswith("ko-") and speed > 3.0:
-            speed_factor = speed / actual_speed
-            y = librosa.effects.time_stretch(y, rate=speed_factor)
-            y = librosa.util.normalize(y) * 1.5
-            y = np.clip(y, -1.0, 1.0)
-        
-        sf.write(str(output_file), y, sr)
-        return str(output_file)
+        try:
+            # librosa로 파일 로드
+            y, sr = librosa.load(str(output_file), sr=None)
+            
+            # 영어 음성인 경우 볼륨 증가
+            if voice.startswith("en-"):
+                y = y * 1.5
+                y = np.clip(y, -1.0, 1.0)
+            
+            # 한국어 고속 재생을 위한 후처리
+            if voice.startswith("ko-") and speed > 3.0:
+                speed_factor = speed / actual_speed
+                y = librosa.effects.time_stretch(y=y, rate=speed_factor)
+                y = librosa.util.normalize(y) * 1.5
+                y = np.clip(y, -1.0, 1.0)
+            
+            try:
+                # WAV 파일로 저장
+                sf.write(str(output_file), y, sr, format='WAV', subtype='PCM_16')
+                return str(output_file)
+            except Exception as write_error:
+                st.error(f"파일 저장 오류: {str(write_error)}")
+                if os.path.exists(output_file):
+                    os.remove(output_file)
+                return None
+
+        except Exception as audio_error:
+            st.error(f"오디오 처리 오류: {str(audio_error)}")
+            if os.path.exists(output_file):
+                os.remove(output_file)
+            # 원본 파일 반환 시도
+            if os.path.exists(str(output_file)):
+                return str(output_file)
+            return None
+
     except Exception as e:
         st.error(f"음성 파일 생성 오류: {str(e)}")
+        if os.path.exists(output_file):
+            os.remove(output_file)
         return None
 
 def create_learning_ui():
@@ -1046,81 +1073,90 @@ async def start_learning():
 
         while True:
             for i in range(total_sentences):
-                # 진행 상태 업데이트
-                progress.progress((i + 1) / total_sentences)
-                status.write(f"학습 진행 중... ({i + 1}/{total_sentences})")
-
+                # 자막 표시 부분을 음성 재생과 분리
                 # 1순위 자막
                 first_lang = settings['first_lang']
-                if first_lang != 'none':
+                if first_lang != 'none' and not settings['hide_subtitles']['first_lang']:
                     subtitles[0].markdown(
-                        f'<div class="first-lang-text {first_lang}-text">{text_data[first_lang][i]}</div>',  # 클래스 이름 수정
+                        f'<div class="first-lang-text {first_lang}-text">{text_data[first_lang][i]}</div>',
                         unsafe_allow_html=True
                     )
-                    await asyncio.sleep(float(settings.get('subtitle_delay', 1.0)))
-                    
+
+                # 2순위 자막
+                second_lang = settings['second_lang']
+                if second_lang != 'none' and not settings['hide_subtitles']['second_lang']:
+                    subtitles[1].markdown(
+                        f'<div class="second-lang-text {second_lang}-text">{text_data[second_lang][i]}</div>',
+                        unsafe_allow_html=True
+                    )
+
+                # 3순위 자막
+                third_lang = settings['third_lang']
+                if third_lang != 'none' and not settings['hide_subtitles']['third_lang']:
+                    subtitles[2].markdown(
+                        f'<div class="third-lang-text {third_lang}-text">{text_data[third_lang][i]}</div>',
+                        unsafe_allow_html=True
+                    )
+
+                # 음성 재생 부분
+                try:
                     # 1순위 음성 재생
                     if first_lang in VOICE_MAPPING:
                         voice = get_voice_mapping(first_lang, settings['first_voice'])
                         if voice:
-                            speed = get_speed_for_language(first_lang, 'first')  # 1순위 배속
+                            speed = get_speed_for_language(first_lang, 'first')
                             for _ in range(settings['first_repeat']):
-                                voice_file = await get_voice_file(text_data[first_lang][i], voice, speed)
-                                if voice_file:
-                                    await play_audio_file(voice_file)
-                                    await wait_for_audio_complete(voice_file)
-                                if _ < settings['first_repeat'] - 1:
-                                    await asyncio.sleep(float(settings.get('spacing', 1.0)))
+                                try:
+                                    voice_file = await get_voice_file(text_data[first_lang][i], voice, speed)
+                                    if voice_file:
+                                        await play_audio_file(voice_file)
+                                        await wait_for_audio_complete(voice_file)
+                                    if _ < settings['first_repeat'] - 1:
+                                        await asyncio.sleep(float(settings.get('spacing', 1.0)))
+                                except Exception as e:
+                                    st.error(f"1순위 음성 재생 오류: {str(e)}")
+                                    continue
 
-                # 2순위 자막
-                second_lang = settings['second_lang']
-                if second_lang != 'none':
-                    subtitles[1].markdown(
-                        f'<div class="second-lang-text {second_lang}-text">{text_data[second_lang][i]}</div>',  # 클래스 이름 수정
-                        unsafe_allow_html=True
-                    )
-                    
                     # 2순위 음성 재생
                     if second_lang in VOICE_MAPPING:
                         voice = get_voice_mapping(second_lang, settings['second_voice'])
                         if voice:
-                            speed = get_speed_for_language(second_lang, 'second')  # 2순위 배속
+                            speed = get_speed_for_language(second_lang, 'second')
                             for _ in range(settings['second_repeat']):
-                                voice_file = await get_voice_file(text_data[second_lang][i], voice, speed)
-                                if voice_file:
-                                    await play_audio_file(voice_file)
-                                    await wait_for_audio_complete(voice_file)
-                                if _ < settings['second_repeat'] - 1:
-                                    await asyncio.sleep(float(settings.get('spacing', 1.0)))
+                                try:
+                                    voice_file = await get_voice_file(text_data[second_lang][i], voice, speed)
+                                    if voice_file:
+                                        await play_audio_file(voice_file)
+                                        await wait_for_audio_complete(voice_file)
+                                    if _ < settings['second_repeat'] - 1:
+                                        await asyncio.sleep(float(settings.get('spacing', 1.0)))
+                                except Exception as e:
+                                    st.error(f"2순위 음성 재생 오류: {str(e)}")
+                                    continue
 
-                # 3순위 자막
-                third_lang = settings['third_lang']
-                if third_lang != 'none':
-                    subtitles[2].markdown(
-                        f'<div class="third-lang-text {third_lang}-text">{text_data[third_lang][i]}</div>',  # 클래스 이름 수정
-                        unsafe_allow_html=True
-                    )
-                    
                     # 3순위 음성 재생
                     if third_lang in VOICE_MAPPING:
                         voice = get_voice_mapping(third_lang, settings['third_voice'])
                         if voice:
-                            speed = get_speed_for_language(third_lang, 'third')  # 3순위 배속
+                            speed = get_speed_for_language(third_lang, 'third')
                             for _ in range(settings['third_repeat']):
-                                voice_file = await get_voice_file(text_data[third_lang][i], voice, speed)
-                                if voice_file:
-                                    await play_audio_file(voice_file)
-                                    await wait_for_audio_complete(voice_file)
-                                if _ < settings['third_repeat'] - 1:
-                                    await asyncio.sleep(float(settings.get('spacing', 1.0)))
+                                try:
+                                    voice_file = await get_voice_file(text_data[third_lang][i], voice, speed)
+                                    if voice_file:
+                                        await play_audio_file(voice_file)
+                                        await wait_for_audio_complete(voice_file)
+                                    if _ < settings['third_repeat'] - 1:
+                                        await asyncio.sleep(float(settings.get('spacing', 1.0)))
+                                except Exception as e:
+                                    st.error(f"3순위 음성 재생 오류: {str(e)}")
+                                    continue
 
-                # 문장 간격 대기
+                except Exception as e:
+                    st.error(f"음성 재생 중 오류 발생: {str(e)}")
+                    continue
+
+                # 문장 간 간격
                 await asyncio.sleep(float(settings.get('spacing', 1.0)))
-
-                # 자막 초기화 (keep_subtitles가 False인 경우)
-                if not settings.get('keep_subtitles', True):
-                    for subtitle in subtitles:
-                        subtitle.empty()
 
     except Exception as e:
         st.error(f"학습 중 오류가 발생했습니다: {str(e)}")
