@@ -327,10 +327,7 @@ def initialize_session_state():
     save_settings(st.session_state.settings)
 
     # pygame 초기화
-    try:
-        pygame.mixer.init()
-    except Exception as e:
-        st.error(f"오디오 시스템 초기화 실패: {str(e)}")
+    initialize_pygame_mixer()
 
 def create_settings_ui(return_to_learning=False):
     """설정 화면 UI 생성 (return_to_learning: 학습 화면으로 복귀 여부)"""
@@ -821,13 +818,35 @@ def get_voice_mapping(language, voice_setting):
         # 기본값 반환
         return VOICE_MAPPING[language][default_voices[language]]
 
+def initialize_pygame_mixer():
+    """pygame mixer 초기화 함수"""
+    try:
+        # 기본 오디오 초기화
+        pygame.mixer.init()
+    except Exception:
+        try:
+            # 대체 설정으로 초기화 시도
+            pygame.mixer.init(44100, -16, 2, 2048)
+        except Exception:
+            try:
+                # SDL 오디오 드라이버 변경 시도
+                os.environ['SDL_AUDIODRIVER'] = 'dummy'
+                pygame.mixer.init(44100, -16, 2, 2048)
+            except Exception as e:
+                st.warning(f"오디오 시스템 초기화 실패: {str(e)}")
+                return False
+    return True
+
 def play_audio(file_path):
     """음성 파일 재생 함수 개선"""
     try:
-        # pygame 초기화
+        # pygame mixer가 초기화되어 있지 않으면 초기화 시도
         if not pygame.mixer.get_init():
-            pygame.mixer.init()
-        
+            if not initialize_pygame_mixer():
+                st.warning("오디오 시스템을 사용할 수 없습니다.")
+                time.sleep(1)  # 대기 시간 추가
+                return
+
         # 기존 재생 중인 음성 정지
         pygame.mixer.stop()
         
@@ -840,9 +859,8 @@ def play_audio(file_path):
             pygame.time.wait(100)
             
     except Exception as e:
-        st.error(f"음성 재생 오류: {str(e)}")
-        # 오류 발생 시 1초 대기
-        time.sleep(1)
+        st.warning(f"음성 재생 실패: {str(e)}")
+        time.sleep(1)  # 대기 시간 추가
 
 async def get_voice_file(text, voice, speed=1.0, output_file=None):
     """음성 파일 생성 함수 개선"""
