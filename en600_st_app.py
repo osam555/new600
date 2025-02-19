@@ -326,6 +326,12 @@ def initialize_session_state():
     # 설정 저장
     save_settings(st.session_state.settings)
 
+    # pygame 초기화
+    try:
+        pygame.mixer.init()
+    except Exception as e:
+        st.error(f"오디오 시스템 초기화 실패: {str(e)}")
+
 def create_settings_ui(return_to_learning=False):
     """설정 화면 UI 생성 (return_to_learning: 학습 화면으로 복귀 여부)"""
     settings = st.session_state.settings
@@ -815,7 +821,31 @@ def get_voice_mapping(language, voice_setting):
         # 기본값 반환
         return VOICE_MAPPING[language][default_voices[language]]
 
+def play_audio(file_path):
+    """음성 파일 재생 함수 개선"""
+    try:
+        # pygame 초기화
+        if not pygame.mixer.get_init():
+            pygame.mixer.init()
+        
+        # 기존 재생 중인 음성 정지
+        pygame.mixer.stop()
+        
+        # 음성 파일 로드 및 재생
+        sound = pygame.mixer.Sound(file_path)
+        sound.play()
+        
+        # 재생이 끝날 때까지 대기
+        while pygame.mixer.get_busy():
+            pygame.time.wait(100)
+            
+    except Exception as e:
+        st.error(f"음성 재생 오류: {str(e)}")
+        # 오류 발생 시 1초 대기
+        time.sleep(1)
+
 async def get_voice_file(text, voice, speed=1.0, output_file=None):
+    """음성 파일 생성 함수 개선"""
     try:
         # 빈 텍스트 체크
         if not text or text.isspace():
@@ -831,35 +861,17 @@ async def get_voice_file(text, voice, speed=1.0, output_file=None):
         if output_file.exists():
             return str(output_file)
             
-        # 한국어 고속 재생을 위한 처리
-        if voice.startswith("ko-") and speed > 3.0:
-            # 3배속 이상일 때 특수 처리
-            actual_speed = 2.0  # TTS 속도를 2배속으로 고정
-            communicate = edge_tts.Communicate(text, voice, rate=f"+{int((actual_speed-1)*100)}%")
-        else:
-            # 일반적인 경우
-            communicate = edge_tts.Communicate(text, voice, rate=f"+{int((speed-1)*100)}%")
-
+        # edge-tts로 음성 생성
+        communicate = edge_tts.Communicate(text, voice, rate=f"+{int((speed-1)*100)}%")
         await communicate.save(str(output_file))
-
-        # 한국어 고속 재생을 위한 후처리
-        if voice.startswith("ko-") and speed > 3.0:
-            # 오디오 파일 처리로 추가 배속
-            y, sr = sf.read(str(output_file))
-            speed_factor = speed / actual_speed  # 실제 배속 비율 계산
+        
+        # 파일 생성 확인
+        if not output_file.exists():
+            st.error("음성 파일이 생성되지 않았습니다.")
+            return None
             
-            # librosa로 배속 처리
-            y_fast = librosa.effects.time_stretch(y, rate=speed_factor)
-            
-            # 볼륨 정규화 및 증폭
-            y_norm = librosa.util.normalize(y_fast) * 1.5  # 볼륨을 1.5배로 증폭
-            
-            # 클리핑 방지
-            y_norm = np.clip(y_norm, -1.0, 1.0)
-            
-            sf.write(str(output_file), y_norm, sr)
-
         return str(output_file)
+        
     except Exception as e:
         st.warning(f"음성 생성 실패: {str(e)}")
         return None
@@ -1099,15 +1111,17 @@ async def start_learning():
                         # 자막 표시
                         if not settings['hide_subtitles'][f'{["first", "second", "third"][rank]}_lang']:
                             text = lang_mapping[lang]['text']
-                            font = settings.get(f'{lang}_font', 'Arial')
-                            color = settings.get(f'{["first", "second", "third"][rank]}_color', '#00FF00')
-                            size = settings.get(f'{["first", "second", "third"][rank]}_font_size', 32)
-                            
-                            subtitles[rank].markdown(
-                                f'<div class="{["first", "second", "third"][rank]}-text" style="font-family: {font}; '
-                                f'color: {color}; font-size: {size}px;">{text}</div>',
-                                unsafe_allow_html=True
-                            )
+                            if text:  # 텍스트가 있는 경우만 표시
+                                try:
+                                    subtitles[rank].markdown(
+                                        f'<div style="font-family: Arial; '
+                                        f'color: {settings.get(f"{["first", "second", "third"][rank]}_color", "#00FF00")}; '
+                                        f'font-size: {settings.get(f"{["first", "second", "third"][rank]}_font_size", 32)}px;">'
+                                        f'{text}</div>',
+                                        unsafe_allow_html=True
+                                    )
+                                except Exception as e:
+                                    st.error(f"자막 표시 오류: {str(e)}")
                         
                         # 음성 재생 시도
                         for _ in range(repeat):
@@ -1289,103 +1303,6 @@ def save_study_time():
 def get_setting(key, default_value):
     """안전하게 설정값을 가져오는 유틸리티 함수"""
     return st.session_state.settings.get(key, default_value)
-
-def play_audio(file_path, sentence_interval=1.0, next_sentence=False):
-    """
-    음성 파일 재생 - 문장 간격 및 다음 문장 설정 적용
-    """
-    try:
-        if not file_path or not os.path.exists(file_path):
-            st.error(f"파일 경로 오류: {file_path}")
-            return
-
-        # WAV 파일에서 실제 재생 시간 계산
-        try:
-            with wave.open(file_path, 'rb') as wav_file:
-                frames = wav_file.getnframes()
-                rate = wav_file.getframerate()
-                duration = frames / float(rate)
-        except Exception:
-            with open(file_path, 'rb') as f:
-                audio_bytes = f.read()
-            duration = len(audio_bytes) / 32000
-
-        # 파일을 바이트로 읽기
-        with open(file_path, 'rb') as f:
-            audio_bytes = f.read()
-        audio_base64 = base64.b64encode(audio_bytes).decode()
-
-        # 고유한 ID 생성
-        audio_id = f"audio_{int(time.time() * 1000)}"
-        
-        # HTML 오디오 요소 생성
-        st.markdown(f"""
-            <audio id="{audio_id}" autoplay="true">
-                <source src="data:audio/wav;base64,{audio_base64}" type="audio/wav">
-            </audio>
-            <script>
-                (function() {{
-                    const audio = document.getElementById("{audio_id}");
-                    
-                    // 이전 오디오가 있으면 정지
-                    if (window.currentAudio && window.currentAudio !== audio) {{
-                        window.currentAudio.pause();
-                        window.currentAudio.currentTime = 0;
-                        window.currentAudio.remove();
-                    }}
-                    
-                    // 현재 오디오를 전역 변수에 저장
-                    window.currentAudio = audio;
-                    window.audioEnded = false;
-                    
-                    // 재생 완료 이벤트
-                    audio.onended = function() {{
-                        window.audioEnded = true;
-                        if (window.currentAudio === audio) {{
-                            window.currentAudio = null;
-                        }}
-                        audio.remove();
-                    }};
-
-                    // 재생 시작 이벤트
-                    audio.onplay = function() {{
-                        window.audioEnded = false;
-                    }};
-                }})();
-            </script>
-        """, unsafe_allow_html=True)
-
-        # 대기 시간 계산
-        if next_sentence:
-            # 다음 문장으로 빠르게 넘어가기
-            wait_time = duration + 0.3  # 최소 대기 시간
-        else:
-            # 문장 간격 적용
-            base_wait = duration
-            
-            # 긴 문장에 대한 추가 대기 시간
-            if duration > 5:
-                extra_wait = duration * 0.1  # 10% 추가
-            else:
-                extra_wait = 0.5
-                
-            # 사용자가 설정한 문장 간격 적용
-            wait_time = base_wait + extra_wait + sentence_interval
-
-        # 최소 대기 시간 보장
-        wait_time = max(wait_time, duration + 0.3)
-        
-        time.sleep(wait_time)
-
-    except Exception as e:
-        st.error(f"음성 재생 오류: {str(e)}")
-    finally:
-        # 임시 파일 삭제
-        try:
-            if file_path and TEMP_DIR in Path(file_path).parents:
-                os.remove(file_path)
-        except Exception:
-            pass
 
 def save_learning_state(df, current_index, session_state):
     """
