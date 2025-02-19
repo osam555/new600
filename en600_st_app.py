@@ -836,29 +836,34 @@ def initialize_pygame_mixer():
     return True
 
 def play_audio(file_path):
-    """음성 파일 재생 함수 개선"""
+    """음성 파일 재생 함수"""
     try:
-        # pygame mixer가 초기화되어 있지 않으면 초기화 시도
-        if not pygame.mixer.get_init():
-            if not initialize_pygame_mixer():
-                st.warning("오디오 시스템을 사용할 수 없습니다.")
-                time.sleep(1)  # 대기 시간 추가
-                return
+        # 파일 존재 확인
+        if not os.path.exists(file_path):
+            st.warning(f"음성 파일을 찾을 수 없습니다: {file_path}")
+            return
 
-        # 기존 재생 중인 음성 정지
-        pygame.mixer.stop()
+        # 오디오 바이트로 읽기
+        with open(file_path, 'rb') as f:
+            audio_bytes = f.read()
         
-        # 음성 파일 로드 및 재생
-        sound = pygame.mixer.Sound(file_path)
-        sound.play()
+        # 스트림릿의 audio 컴포넌트로 재생
+        st.audio(audio_bytes, format='audio/wav')
         
-        # 재생이 끝날 때까지 대기
-        while pygame.mixer.get_busy():
-            pygame.time.wait(100)
-            
+        # 재생 시간 계산 및 대기
+        try:
+            with wave.open(file_path, 'rb') as wav_file:
+                frames = wav_file.getnframes()
+                rate = wav_file.getframerate()
+                duration = frames / float(rate)
+                time.sleep(duration)
+        except Exception:
+            # wave 파일 읽기 실패 시 기본 대기 시간 사용
+            time.sleep(2)
+
     except Exception as e:
         st.warning(f"음성 재생 실패: {str(e)}")
-        time.sleep(1)  # 대기 시간 추가
+        time.sleep(1)
 
 async def get_voice_file(text, voice, speed=1.0, output_file=None):
     """음성 파일 생성 함수 개선"""
