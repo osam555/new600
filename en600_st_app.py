@@ -21,7 +21,7 @@ import psutil
 import gc
 import hashlib
 
-## streamlit run en600st/en600_st_app.py
+## streamlit run en600st/en600_st_appcopy5.py
 
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -505,19 +505,30 @@ def create_settings_ui(return_to_learning=False):
                                       options=list(range(0, 3)),  # 0-2회
                                       index=current_repeat-1,  # 0-based index
                                       key="first_repeat")
-            # 배속을 선택박스로 변경
-            speed_options = [round(x * 0.2, 1) for x in range(4, 31)]  # 0.8-6.0배, 0.2간격
-            speed_key = f"{settings['first_lang']}_speed"
-            current_speed = round(float(settings.get(speed_key, 1.2)), 1)
-            current_speed = max(0.8, min(current_speed, 6.0 if settings['first_lang'] == 'korean' else 4.0))
-            try:
-                speed_index = speed_options.index(current_speed)
-            except ValueError:
-                speed_index = speed_options.index(1.2)
-            settings[speed_key] = st.selectbox("음성 속도(배)",
-                                     options=speed_options,
-                                     index=speed_index,
-                                     key="first_speed")
+            
+            # 음성 속도와 모델 선택 추가
+            if settings['first_lang'] in VOICE_MAPPING:
+                speed_options = [round(x * 0.2, 1) for x in range(4, 31)]  # 0.8-6.0배, 0.2간격
+                speed_key = f"{settings['first_lang']}_speed"
+                current_speed = round(float(settings.get(speed_key, 1.2)), 1)
+                current_speed = max(0.8, min(current_speed, 6.0 if settings['first_lang'] == 'korean' else 4.0))
+                try:
+                    speed_index = speed_options.index(current_speed)
+                except ValueError:
+                    speed_index = speed_options.index(1.2)
+                settings[speed_key] = st.selectbox("음성 속도(배)",
+                                         options=speed_options,
+                                         index=speed_index,
+                                         key=f"first_speed_top_{settings['first_lang']}")
+                
+                # 음성 모델 선택
+                voice_options = list(VOICE_MAPPING[settings['first_lang']].keys())
+                default_voice = next(iter(VOICE_MAPPING[settings['first_lang']].keys()))
+                selected_voice = st.selectbox("음성 모델",
+                                            options=voice_options,
+                                            index=voice_options.index(settings.get(f"{settings['first_lang']}_voice", default_voice)),
+                                            key=f"first_voice_top_{settings['first_lang']}")
+                settings[f"{settings['first_lang']}_voice"] = selected_voice
 
         with col2:
             settings['second_lang'] = st.selectbox("2번째 언어",
@@ -531,18 +542,30 @@ def create_settings_ui(return_to_learning=False):
                                        options=list(range(1, 3)),
                                        index=current_repeat-1,
                                        key="second_repeat")
-            # 배속을 선택박스로 변경
-            speed_key = f"second_{settings['second_lang']}_speed"  # 2순위 전용 배속 키
-            current_speed = round(float(settings.get(speed_key, 1.2)), 1)
-            current_speed = max(0.8, min(current_speed, 6.0 if settings['second_lang'] == 'korean' else 4.0))
-            try:
-                speed_index = speed_options.index(current_speed)
-            except ValueError:
-                speed_index = speed_options.index(1.2)
-            settings[speed_key] = st.selectbox("음성 속도(배)",
-                                      options=speed_options,
-                                      index=speed_index,
-                                      key="second_speed")
+            
+            # 음성 속도와 모델 선택 추가
+            if settings['second_lang'] in VOICE_MAPPING:
+                speed_options = [round(x * 0.2, 1) for x in range(4, 31)]
+                speed_key = f"second_{settings['second_lang']}_speed"
+                current_speed = round(float(settings.get(speed_key, 1.2)), 1)
+                current_speed = max(0.8, min(current_speed, 6.0 if settings['second_lang'] == 'korean' else 4.0))
+                try:
+                    speed_index = speed_options.index(current_speed)
+                except ValueError:
+                    speed_index = speed_options.index(1.2)
+                settings[speed_key] = st.selectbox("음성 속도(배)",
+                                         options=speed_options,
+                                         index=speed_index,
+                                         key=f"second_speed_top_{settings['second_lang']}")
+                
+                # 음성 모델 선택
+                voice_options = list(VOICE_MAPPING[settings['second_lang']].keys())
+                default_voice = next(iter(VOICE_MAPPING[settings['second_lang']].keys()))
+                selected_voice = st.selectbox("음성 모델",
+                                            options=voice_options,
+                                            index=voice_options.index(settings.get(f"{settings['second_lang']}_voice", default_voice)),
+                                            key=f"second_voice_top_{settings['second_lang']}")
+                settings[f"{settings['second_lang']}_voice"] = selected_voice
 
         with col3:
             # 3순위 언어에는 'none' 옵션 추가
@@ -561,18 +584,30 @@ def create_settings_ui(return_to_learning=False):
                                           options=list(range(1, 3)),  # 1-2회
                                           index=current_repeat-1,  # 0-based index
                                           key="third_repeat")
-                # 배속을 선택박스로 변경
-                speed_key = f"third_{settings['third_lang']}_speed"  # 3순위 전용 배속 키
-                current_speed = round(float(settings.get(speed_key, 1.2)), 1)
-                current_speed = max(0.8, min(current_speed, 6.0 if settings['third_lang'] == 'korean' else 4.0))
-                try:
-                    speed_index = speed_options.index(current_speed)
-                except ValueError:
-                    speed_index = speed_options.index(1.2)
-                settings[speed_key] = st.selectbox("음성 속도(배)",
-                                         options=speed_options,
-                                         index=speed_index,
-                                         key="third_speed")
+                
+                # 음성 속도와 모델 선택 추가
+                if settings['third_lang'] in VOICE_MAPPING:
+                    speed_options = [round(x * 0.2, 1) for x in range(4, 31)]
+                    speed_key = f"third_{settings['third_lang']}_speed"
+                    current_speed = round(float(settings.get(speed_key, 1.2)), 1)
+                    current_speed = max(0.8, min(current_speed, 6.0 if settings['third_lang'] == 'korean' else 4.0))
+                    try:
+                        speed_index = speed_options.index(current_speed)
+                    except ValueError:
+                        speed_index = speed_options.index(1.2)
+                    settings[speed_key] = st.selectbox("음성 속도(배)",
+                                             options=speed_options,
+                                             index=speed_index,
+                                             key=f"third_speed_top_{settings['third_lang']}")
+                    
+                    # 음성 모델 선택
+                    voice_options = list(VOICE_MAPPING[settings['third_lang']].keys())
+                    default_voice = next(iter(VOICE_MAPPING[settings['third_lang']].keys()))
+                    selected_voice = st.selectbox("음성 모델",
+                                                options=voice_options,
+                                                index=voice_options.index(settings.get(f"{settings['third_lang']}_voice", default_voice)),
+                                                key=f"third_voice_top_{settings['third_lang']}")
+                    settings[f"{settings['third_lang']}_voice"] = selected_voice
             else:
                 # 'none'일 때는 재생 횟수를 0으로 설정
                 settings['third_repeat'] = 0
@@ -703,7 +738,7 @@ def create_settings_ui(return_to_learning=False):
         with col1:
             st.markdown("**1순위 언어**")
             settings['first_font_size'] = st.number_input("폰트 크기",
-                                                       value=32,  # 기본값 32
+                                                       value=settings.get('first_font_size', 32),  # 기본값 32
                                                        min_value=10,
                                                        max_value=50,
                                                        step=1,
@@ -718,7 +753,7 @@ def create_settings_ui(return_to_learning=False):
         with col2:
             st.markdown("**2순위 언어**")
             settings['second_font_size'] = st.number_input("폰트 크기",
-                                                        value=32,  # 기본값 32
+                                                        value=settings.get('second_font_size', 32),  # 기본값 32
                                                         min_value=10,
                                                         max_value=50,
                                                         step=1,
@@ -733,7 +768,7 @@ def create_settings_ui(return_to_learning=False):
         with col3:
             st.markdown("**3순위 언어**")
             settings['third_font_size'] = st.number_input("폰트 크기",
-                                                       value=32,  # 기본값 32
+                                                       value=settings.get('third_font_size', 32),  # 기본값 32
                                                        min_value=10,
                                                        max_value=50,
                                                        step=1,
@@ -770,11 +805,21 @@ def get_voice_mapping(language, voice_setting):
         if not voice_setting or voice_setting not in VOICE_MAPPING.get(language, {}):
             voice_setting = default_voices.get(language)
             
-        return VOICE_MAPPING[language][voice_setting]
+        # 음성 매핑 반환 전에 유효성 검사
+        if language in VOICE_MAPPING and voice_setting in VOICE_MAPPING[language]:
+            return VOICE_MAPPING[language][voice_setting]
+        else:
+            # 기본값으로 폴백
+            default_voice = default_voices.get(language)
+            if default_voice and language in VOICE_MAPPING and default_voice in VOICE_MAPPING[language]:
+                return VOICE_MAPPING[language][default_voice]
+            else:
+                st.error(f"음성 매핑을 찾을 수 없습니다 ({language})")
+                return None
+            
     except Exception as e:
         st.error(f"음성 매핑 오류 ({language}): {str(e)}")
-        # 기본값 반환
-        return VOICE_MAPPING[language][default_voices[language]]
+        return None
 
 def initialize_pygame_mixer():
     """pygame mixer 초기화 함수"""
@@ -918,13 +963,42 @@ async def get_voice_file(text, voice, speed=1.0, output_file=None):
 def create_learning_ui():
     """학습 화면 UI 생성"""
     
-    # 상단 컬럼 생성 - 진행 상태와 배속 정보를 위한 컬럼
+    # CSS 스타일 추가
+    st.markdown("""
+        <style>
+            /* 자막 텍스트 스타일 */
+            .first-text {
+                font-size: 32px !important;
+                color: var(--first-color, #00FF00);
+                margin: 10px 0;
+            }
+            .second-text {
+                font-size: 32px !important;
+                color: var(--second-color, #FFFFF0);
+                margin: 10px 0;
+            }
+            .third-text {
+                font-size: 32px !important;
+                color: var(--third-color, #00FF00);
+                margin: 10px 0;
+            }
+            
+            /* 동적 폰트 크기 적용을 위한 CSS 변수 */
+            :root {
+                --first-font-size: 32px;
+                --second-font-size: 32px;
+                --third-font-size: 32px;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # 상단 컬럼 생성
     col1, col2 = st.columns([0.7, 0.3])
     
     with col1:
         progress = st.progress(0)
         status = st.empty()
-    
+        
         # 배속 정보 표시
         speed_info = []
         
@@ -934,20 +1008,10 @@ def create_learning_ui():
             (st.session_state.settings['second_lang'], st.session_state.settings['second_repeat']),
             (st.session_state.settings['third_lang'], st.session_state.settings['third_repeat'])
         ]:
-            if repeat > 0:  # 재생 횟수가 0보다 큰 경우만 표시
+            if repeat > 0:
                 speed = st.session_state.settings.get(f'{lang}_speed', 1.2)
                 speed_text = str(int(speed)) if speed.is_integer() else f"{speed:.1f}"
-                
-                # 언어별 한글 표시
-                lang_display = {
-                    'korean': '한글',
-                    'english': '영어',
-                    'chinese': '중국어',
-                    'japanese': '일본어',
-                    'vietnamese': '베트남어'
-                }.get(lang, lang)
-                
-                speed_info.append(f"{lang_display} {speed_text}배")
+                speed_info.append(f"{LANG_DISPLAY.get(lang, lang)} {speed_text}배")
     
     with col2:
         if st.button("⚙️ 학습 설정"):
@@ -959,6 +1023,23 @@ def create_learning_ui():
 
     # 자막을 위한 빈 컨테이너
     subtitles = [st.empty() for _ in range(3)]
+    
+    # 폰트 크기 설정을 JavaScript로 적용
+    font_sizes = {
+        'first': st.session_state.settings.get('first_font_size', 32),
+        'second': st.session_state.settings.get('second_font_size', 32),
+        'third': st.session_state.settings.get('third_font_size', 32)
+    }
+    
+    # JavaScript로 폰트 크기 동적 설정
+    js_code = f"""
+        <script>
+            document.documentElement.style.setProperty('--first-font-size', '{font_sizes["first"]}px');
+            document.documentElement.style.setProperty('--second-font-size', '{font_sizes["second"]}px');
+            document.documentElement.style.setProperty('--third-font-size', '{font_sizes["third"]}px');
+        </script>
+    """
+    st.markdown(js_code, unsafe_allow_html=True)
 
     return progress, status, subtitles, speed_info
 
@@ -973,6 +1054,20 @@ async def start_learning():
     """학습 시작"""
     try:
         settings = st.session_state.settings
+        
+        # 음성 설정 확인 및 업데이트
+        for rank, lang_key in [('first', 'first_lang'), ('second', 'second_lang'), ('third', 'third_lang')]:
+            lang = settings.get(lang_key)
+            if lang and lang != 'none' and lang in VOICE_MAPPING:
+                voice_key = f"{lang}_voice"
+                # 현재 설정된 음성 모델 확인
+                current_voice = settings.get(voice_key)
+                if not current_voice or current_voice not in VOICE_MAPPING[lang]:
+                    # 기본 음성 모델로 설정
+                    default_voice = next(iter(VOICE_MAPPING[lang].keys()))
+                    settings[voice_key] = default_voice
+                    st.warning(f"{rank.capitalize()} 언어({lang})의 음성 모델이 재설정되었습니다.")
+
         sentence_count = 0
         repeat_count = 0
         
@@ -980,77 +1075,52 @@ async def start_learning():
         df = pd.read_excel(
             EXCEL_PATH,
             sheet_name=settings.get('selected_sheet', 0),
-            header=0,  # 첫 행을 헤더로 사용
+            header=0,
             engine='openpyxl'
         )
 
         start_idx = settings['start_row'] - 1
         end_idx = settings['end_row'] - 1
 
-        # 열 이름 매핑 (실제 엑셀 헤더에 맞춤)
+        # 열 이름 매핑
         column_mapping = {
-            'english': 'en-미국',     # A열
-            'korean': 'ko-한국',      # B열
-            'chinese': 'zh-중국',     # C열
-            'japanese': 'ja-일본',    # D열
-            'vietnamese': 'vi-베트남', # E열
-            'thai': 'th-태국',        # F열
-            'russian': 'ru-러시아',   # H열
-            'uzbek': 'uz-우즈벡',     # I열
-            'indonesian': 'id-인니'   # M열
+            'english': 'en-미국',
+            'korean': 'ko-한국',
+            'chinese': 'zh-중국',
+            'japanese': 'ja-일본',
+            'vietnamese': 'vi-베트남',
+            'thai': 'th-태국',
+            'russian': 'ru-러시아',
+            'uzbek': 'uz-우즈벡',
+            'indonesian': 'id-인니'
         }
 
-        # 기본 언어 데이터 읽기
-        english = df[column_mapping['english']].iloc[start_idx:end_idx+1].tolist()
-        korean = df[column_mapping['korean']].iloc[start_idx:end_idx+1].tolist()
-        chinese = df[column_mapping['chinese']].iloc[start_idx:end_idx+1].tolist()
-        japanese = df[column_mapping['japanese']].iloc[start_idx:end_idx+1].tolist()
-        vietnamese = df[column_mapping['vietnamese']].iloc[start_idx:end_idx+1].tolist()
-        thai = df[column_mapping['thai']].iloc[start_idx:end_idx+1].tolist()
-        russian = df[column_mapping['russian']].iloc[start_idx:end_idx+1].tolist()
-        uzbek = df[column_mapping['uzbek']].iloc[start_idx:end_idx+1].tolist()
-        indonesian = df[column_mapping['indonesian']].iloc[start_idx:end_idx+1].tolist()
+        # 언어별 데이터 저장
+        lang_data = {}
+        for lang, col in column_mapping.items():
+            lang_data[lang] = df[col].iloc[start_idx:end_idx+1].tolist()
 
-        total_sentences = len(english)
+        total_sentences = len(lang_data['english'])
 
         # 학습 UI 생성
         progress, status, subtitles, speed_info = create_learning_ui()
 
-        # 언어 매핑 정의 - 반복문 밖으로 이동
-        lang_mapping = {
-            'korean': {'text': korean[0], 'voice': get_voice_mapping('korean', settings.get('kor_voice')), 'speed': get_rank_speed('korean', 0)},
-            'english': {'text': english[0], 'voice': get_voice_mapping('english', settings.get('eng_voice')), 'speed': get_rank_speed('english', 0)},
-            'chinese': {'text': chinese[0], 'voice': get_voice_mapping('chinese', settings.get('zh_voice')), 'speed': get_rank_speed('chinese', 0)},
-            'japanese': {'text': japanese[0], 'voice': get_voice_mapping('japanese', settings.get('jp_voice')), 'speed': get_rank_speed('japanese', 0)},
-            'vietnamese': {'text': vietnamese[0], 'voice': get_voice_mapping('vietnamese', settings.get('vi_voice')), 'speed': get_rank_speed('vietnamese', 0)},
-            'thai': {'text': thai[0], 'voice': get_voice_mapping('thai', settings.get('thai_voice')), 'speed': get_rank_speed('thai', 0)},
-            'russian': {'text': russian[0], 'voice': get_voice_mapping('russian', settings.get('russian_voice')), 'speed': get_rank_speed('russian', 0)},
-            'uzbek': {'text': uzbek[0], 'voice': get_voice_mapping('uzbek', settings.get('uzbek_voice')), 'speed': get_rank_speed('uzbek', 0)},
-            'indonesian': {'text': indonesian[0], 'voice': get_voice_mapping('indonesian', settings.get('indonesian_voice')), 'speed': get_rank_speed('indonesian', 0)}
-        }
-
         # 학습 반복 처리
         while True:
             for i in range(total_sentences):
-                # 현재 문장의 텍스트 업데이트
-                for lang in lang_mapping:
-                    lang_mapping[lang]['text'] = eval(f"{lang}[{i}]")
-
                 # 진행률 업데이트
                 progress.progress((i + 1) / total_sentences)
 
                 # 현재 문장 번호와 배속 정보 표시
                 sentence_number = start_idx + i + 1
                 speed_display = []
-                for rank, (lang, repeat) in enumerate([
-                    (settings['first_lang'], settings['first_repeat']),
-                    (settings['second_lang'], settings['second_repeat']),
-                    (settings['third_lang'], settings['third_repeat'])
-                ]):
-                    if repeat > 0 and lang != 'none':
-                        # 순위별 특정 언어의 배속 가져오기
-                        rank_name = ["first", "second", "third"][rank]
-                        speed_key = f"{rank_name}_{lang}_speed"
+                
+                # 각 순위별 처리
+                for rank, lang_key in [('first', 'first_lang'), ('second', 'second_lang'), ('third', 'third_lang')]:
+                    lang = settings[lang_key]
+                    if lang != 'none' and lang in lang_data:
+                        # 배속 정보 표시
+                        speed_key = f"{rank}_{lang}_speed"
                         speed = settings.get(speed_key, 1.2)
                         speed_text = str(int(speed)) if speed.is_integer() else f"{speed:.1f}"
                         speed_display.append(f"{LANG_DISPLAY.get(lang, lang)} {speed_text}배")
@@ -1058,20 +1128,28 @@ async def start_learning():
                 status.markdown(f'<div style="color: #00FF00;">No.{sentence_number:03d} ({", ".join(speed_display)})</div>', unsafe_allow_html=True)
 
                 # 각 순위별 처리
-                for rank in range(3):
-                    rank_name = ["first", "second", "third"][rank]
-                    lang = settings[f'{rank_name}_lang']
-                    repeat = settings[f'{rank_name}_repeat']
+                for rank, lang_key in [('first', 'first_lang'), ('second', 'second_lang'), ('third', 'third_lang')]:
+                    lang = settings[lang_key]
+                    repeat = settings.get(f'{rank}_repeat', 0)
                     
-                    if lang != 'none' and lang in lang_mapping:
-                        # 자막 표시 (시차 적용)
-                        if not settings['hide_subtitles'][f'{rank_name}_lang']:
-                            text = lang_mapping[lang]['text']
-                            if text and rank < len(subtitles):
+                    if lang != 'none' and lang in lang_data:
+                        # 현재 문장 가져오기
+                        text = lang_data[lang][i]
+                        
+                        # 자막 표시
+                        if not settings['hide_subtitles'][f'{rank}_lang']:
+                            if text and rank_key_to_index(rank) < len(subtitles):
                                 try:
-                                    await asyncio.sleep(settings['subtitle_delay'] * rank)  # 순위별 시차
-                                    subtitles[rank].markdown(
-                                        f'<div class="{rank_name}-text">{text}</div>',
+                                    await asyncio.sleep(settings['subtitle_delay'] * rank_key_to_index(rank))
+                                    font_size = settings.get(f'{rank}_font_size', 32)
+                                    color = settings.get(f'{rank}_color', '#00FF00')
+                                    subtitles[rank_key_to_index(rank)].markdown(
+                                        f"""
+                                        <div class="{rank}-text" 
+                                             style="font-size: {font_size}px !important; color: {color};">
+                                            {text}
+                                        </div>
+                                        """,
                                         unsafe_allow_html=True
                                     )
                                 except Exception as e:
@@ -1080,14 +1158,14 @@ async def start_learning():
 
                         # 음성 재생
                         if repeat > 0:
-                            speed_key = f"{rank_name}_{lang}_speed"
+                            speed_key = f"{rank}_{lang}_speed"
                             speed = settings.get(speed_key, 1.2)
                             
                             for _ in range(repeat):
                                 try:
                                     audio_file = await get_voice_file(
-                                        text=lang_mapping[lang]['text'],
-                                        voice=lang_mapping[lang]['voice'],
+                                        text=text,
+                                        voice=get_voice_mapping(lang, settings.get(f"{lang}_voice")),
                                         speed=speed
                                     )
                                     if audio_file:
@@ -1363,6 +1441,11 @@ def get_rank_speed(lang, rank):
         
     # 기본 언어 배속 반환
     return settings.get(f'{lang}_speed', 1.2)
+
+def rank_key_to_index(rank):
+    """순위 키를 인덱스로 변환"""
+    rank_mapping = {'first': 0, 'second': 1, 'third': 2}
+    return rank_mapping.get(rank, 0)
 
 if __name__ == "__main__":
     main()
