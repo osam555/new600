@@ -14,8 +14,6 @@ import numpy as np
 import traceback
 import json
 import base64
-
-from gtts import gTTS
 from pydub import AudioSegment
 import io
 import librosa
