@@ -54,11 +54,11 @@ LANG_DISPLAY = {
 VOICE_MAPPING = {
     'english': {
         "Steffan (US)": "en-US-SteffanNeural",
+        "Jenny (US)": "en-US-JennyNeural",    # Jenny 추가 확인
         "Roger (US)": "en-US-RogerNeural",
         "Sonia (UK)": "en-GB-SoniaNeural",
         "Brian (US)": "en-US-BrianNeural",
         "Emma (US)": "en-US-EmmaNeural",
-        "Jenny (US)": "en-US-JennyNeural",
         "Guy (US)": "en-US-GuyNeural",
         "Aria (US)": "en-US-AriaNeural",
         "Ryan (UK)": "en-GB-RyanNeural"
@@ -90,6 +90,9 @@ VOICE_MAPPING = {
     'russian': {
         "Dmitry": "ru-RU-DmitryNeural",
         "Svetlana": "ru-RU-SvetlanaNeural"
+    },
+    'uzbek': {
+        "Dmitry": "ru-RU-DmitryNeural"  # 우즈벡어에 러시아어 드미트리 사용
     },
     'indonesian': {
         "Gadis": "id-ID-GadisNeural",
@@ -515,8 +518,12 @@ def create_settings_ui(return_to_learning=False):
                 first_lang = st.session_state.settings['first_lang']
                 if first_lang in VOICE_MAPPING:
                     voices = VOICE_MAPPING[first_lang]
-                    female_voices = {k: v for k, v in voices.items() if 'female' in v.lower() or any(name in v.lower() for name in ['sunhi', 'jenny', 'sonia', 'emma', 'aria', 'xiaoxiao', 'hoaimy', 'nanami', 'premwadee', 'blessica', 'svetlana', 'gadis'])}
-                    default_voice = list(female_voices.keys())[0] if female_voices else list(voices.keys())[0]
+                    # 한국어일 경우 선희를 기본값으로
+                    if first_lang == 'korean':
+                        default_voice = '선희'
+                    else:
+                        female_voices = {k: v for k, v in voices.items() if 'female' in v.lower() or any(name in v.lower() for name in ['sunhi', 'jenny', 'sonia', 'emma', 'aria', 'xiaoxiao', 'hoaimy', 'nanami', 'premwadee', 'blessica', 'svetlana', 'gadis'])}
+                        default_voice = list(female_voices.keys())[0] if female_voices else list(voices.keys())[0]
                     
                     settings['first_voice'] = st.selectbox(
                         "1순위 음성",
@@ -549,8 +556,12 @@ def create_settings_ui(return_to_learning=False):
                 second_lang = st.session_state.settings['second_lang']
                 if second_lang in VOICE_MAPPING:
                     voices = VOICE_MAPPING[second_lang]
-                    male_voices = {k: v for k, v in voices.items() if 'male' in v.lower() or any(name in v.lower() for name in ['steffan', 'roger', 'brian', 'guy', 'ryan', 'injoon', 'yunjian', 'namminh', 'keita', 'niwat', 'angelo', 'dmitry', 'ardi'])}
-                    default_voice = list(male_voices.keys())[0] if male_voices else list(voices.keys())[0]
+                    # 영어일 경우 Steffan (US)를 기본값으로
+                    if second_lang == 'english':
+                        default_voice = 'Steffan (US)'
+                    else:
+                        male_voices = {k: v for k, v in voices.items() if 'male' in v.lower() or any(name in v.lower() for name in ['steffan', 'roger', 'brian', 'guy', 'ryan', 'injoon', 'yunjian', 'namminh', 'keita', 'niwat', 'angelo', 'dmitry', 'ardi'])}
+                        default_voice = list(male_voices.keys())[0] if male_voices else list(voices.keys())[0]
                     
                     settings['second_voice'] = st.selectbox(
                         "2순위 음성",
@@ -583,13 +594,23 @@ def create_settings_ui(return_to_learning=False):
                 third_lang = st.session_state.settings['third_lang']
                 if third_lang in VOICE_MAPPING:
                     voices = VOICE_MAPPING[third_lang]
-                    female_voices = {k: v for k, v in voices.items() if 'female' in v.lower() or any(name in v.lower() for name in ['sunhi', 'jenny', 'sonia', 'emma', 'aria', 'xiaoxiao', 'hoaimy', 'nanami', 'premwadee', 'blessica', 'svetlana', 'gadis'])}
-                    default_voice = list(female_voices.keys())[0] if female_voices else list(voices.keys())[0]
+                    # 영어일 경우 Jenny (US)를 기본값으로
+                    if third_lang == 'english':
+                        default_voice = 'Jenny (US)'
+                        if default_voice not in voices:
+                            default_voice = list(voices.keys())[0]  # 없으면 첫 번째 음성 선택
+                    else:
+                        female_voices = {k: v for k, v in voices.items() if 'female' in v.lower() or any(name in v.lower() for name in ['sunhi', 'jenny', 'sonia', 'emma', 'aria', 'xiaoxiao', 'hoaimy', 'nanami', 'premwadee', 'blessica', 'svetlana', 'gadis'])}
+                        default_voice = list(female_voices.keys())[0] if female_voices else list(voices.keys())[0]
+                    
+                    current_voice = settings.get('third_voice', default_voice)
+                    if current_voice not in voices:
+                        current_voice = default_voice
                     
                     settings['third_voice'] = st.selectbox(
                         "3순위 음성",
                         options=list(voices.keys()),
-                        index=list(voices.keys()).index(settings.get('third_voice', default_voice)),
+                        index=list(voices.keys()).index(current_voice),
                         key='third_voice_select'
                     )
                 
@@ -840,14 +861,15 @@ def get_voice_mapping(language, voice_setting):
     try:
         # 기본값 설정
         default_voices = {
-            'korean': '선희',            # 1순위 기본: 선희
-            'english': 'Steffan (US)',   # 2순위 기본: 스테판
+            'korean': '선희',
+            'english': 'Steffan (US)',
             'chinese': 'XiaoxiaoNeural',
             'japanese': 'Nanami',
             'vietnamese': 'HoaiMy',
             'thai': 'Niwat',
             'filipino': 'Angelo',
             'russian': 'Dmitry',
+            'uzbek': 'Dmitry',  # 우즈벡어에 러시아어 드미트리 사용
             'indonesian': 'Gadis'
         }
 
