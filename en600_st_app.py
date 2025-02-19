@@ -1207,16 +1207,31 @@ def play_audio(file_path, sentence_interval=1.0, next_sentence=False):
 
         # base64로 인코딩
         audio_base64 = base64.b64encode(audio_bytes).decode()
+        audio_id = f"audio_{int(time.time() * 1000)}"
         
-        # HTML 오디오 요소 생성
+        # HTML 오디오 요소 생성 (controls 속성 추가)
         st.markdown(f"""
-            <audio autoplay="true">
+            <audio id="{audio_id}" autoplay controls style="display:none">
                 <source src="data:audio/wav;base64,{audio_base64}" type="audio/wav">
             </audio>
+            <script>
+                const audio = document.getElementById("{audio_id}");
+                audio.play().catch(e => console.log("Auto-play failed:", e));
+                
+                // 이전 오디오 정리
+                if (window.previousAudio) {{
+                    window.previousAudio.pause();
+                    window.previousAudio.remove();
+                }}
+                window.previousAudio = audio;
+                
+                // 재생 완료 시 요소 제거
+                audio.onended = () => audio.remove();
+            </script>
         """, unsafe_allow_html=True)
         
         # 대기 시간
-        duration = len(audio_bytes) / 32000  # 근사값
+        duration = len(audio_bytes) / 32000
         time.sleep(max(duration + sentence_interval, 0.5))
 
     finally:
