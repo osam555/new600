@@ -1,1 +1,7 @@
-
+ffmpeg
+python3-pygame
+libasound2-dev
+python3-dev
+portaudio19-dev
+python3-pyaudio
+libsndfile1 
