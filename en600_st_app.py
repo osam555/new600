@@ -1113,10 +1113,12 @@ async def start_learning():
                             text = lang_mapping[lang]['text']
                             if text:  # 텍스트가 있는 경우만 표시
                                 try:
+                                    rank_names = ["first", "second", "third"]
+                                    rank_name = rank_names[rank]
                                     subtitles[rank].markdown(
                                         f'<div style="font-family: Arial; '
-                                        f'color: {settings.get(f"{["first", "second", "third"][rank]}_color", "#00FF00")}; '
-                                        f'font-size: {settings.get(f"{["first", "second", "third"][rank]}_font_size", 32)}px;">'
+                                        f'color: {settings.get(f"{rank_name}_color", "#00FF00")}; '
+                                        f'font-size: {settings.get(f"{rank_name}_font_size", 32)}px;">'
                                         f'{text}</div>',
                                         unsafe_allow_html=True
                                     )
@@ -1401,6 +1403,11 @@ def cleanup_temp_files():
         gc.collect()
     except Exception:
         pass
+
+def get_rank_name(rank):
+    """순위에 따른 이름 반환"""
+    rank_names = ["first", "second", "third"]
+    return rank_names[rank]
 
 if __name__ == "__main__":
     main()
