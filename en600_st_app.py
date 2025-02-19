@@ -892,59 +892,20 @@ def get_voice_mapping(language, voice_setting):
 
 async def get_voice_file(text, voice, speed=1.0, output_file=None):
     try:
-        # 한국어 고속 재생을 위한 처리
-        if voice.startswith("ko-") and speed > 3.0:
-            actual_speed = 2.0
-            communicate = edge_tts.Communicate(text, voice, rate=f"+{int((actual_speed-1)*100)}%")
-        else:
-            communicate = edge_tts.Communicate(text, voice, rate=f"+{int((speed-1)*100)}%")
+        if not text or not voice:
+            return None
 
+        communicate = edge_tts.Communicate(text, voice, rate=f"+{int((speed-1)*100)}%")
+        
         if output_file is None:
-            # 임시 파일명에 타임스탬프 추가
             timestamp = int(time.time() * 1000)
-            output_file = TEMP_DIR / f"temp_{voice}_{speed}_{timestamp}.wav"
+            output_file = TEMP_DIR / f"temp_{timestamp}.wav"
 
-        # 파일이 이미 존재하면 삭제
         if os.path.exists(output_file):
             os.remove(output_file)
 
-        # edge-tts로 음성 파일 생성
         await communicate.save(str(output_file))
-        
-        try:
-            # librosa로 파일 로드
-            y, sr = librosa.load(str(output_file), sr=None)
-            
-            # 영어 음성인 경우 볼륨 증가
-            if voice.startswith("en-"):
-                y = y * 1.5
-                y = np.clip(y, -1.0, 1.0)
-            
-            # 한국어 고속 재생을 위한 후처리
-            if voice.startswith("ko-") and speed > 3.0:
-                speed_factor = speed / actual_speed
-                y = librosa.effects.time_stretch(y=y, rate=speed_factor)
-                y = librosa.util.normalize(y) * 1.5
-                y = np.clip(y, -1.0, 1.0)
-            
-            try:
-                # WAV 파일로 저장
-                sf.write(str(output_file), y, sr, format='WAV', subtype='PCM_16')
-                return str(output_file)
-            except Exception as write_error:
-                st.error(f"파일 저장 오류: {str(write_error)}")
-                if os.path.exists(output_file):
-                    os.remove(output_file)
-                return None
-
-        except Exception as audio_error:
-            st.error(f"오디오 처리 오류: {str(audio_error)}")
-            if os.path.exists(output_file):
-                os.remove(output_file)
-            # 원본 파일 반환 시도
-            if os.path.exists(str(output_file)):
-                return str(output_file)
-            return None
+        return str(output_file)
 
     except Exception as e:
         st.error(f"음성 파일 생성 오류: {str(e)}")
@@ -1109,8 +1070,7 @@ async def start_learning():
                                 try:
                                     voice_file = await get_voice_file(text_data[first_lang][i], voice, speed)
                                     if voice_file:
-                                        await play_audio_file(voice_file)
-                                        await wait_for_audio_complete(voice_file)
+                                        play_audio(voice_file)
                                     if _ < settings['first_repeat'] - 1:
                                         await asyncio.sleep(float(settings.get('spacing', 1.0)))
                                 except Exception as e:
@@ -1126,8 +1086,7 @@ async def start_learning():
                                 try:
                                     voice_file = await get_voice_file(text_data[second_lang][i], voice, speed)
                                     if voice_file:
-                                        await play_audio_file(voice_file)
-                                        await wait_for_audio_complete(voice_file)
+                                        play_audio(voice_file)
                                     if _ < settings['second_repeat'] - 1:
                                         await asyncio.sleep(float(settings.get('spacing', 1.0)))
                                 except Exception as e:
@@ -1143,8 +1102,7 @@ async def start_learning():
                                 try:
                                     voice_file = await get_voice_file(text_data[third_lang][i], voice, speed)
                                     if voice_file:
-                                        await play_audio_file(voice_file)
-                                        await wait_for_audio_complete(voice_file)
+                                        play_audio(voice_file)
                                     if _ < settings['third_repeat'] - 1:
                                         await asyncio.sleep(float(settings.get('spacing', 1.0)))
                                 except Exception as e:
@@ -1228,191 +1186,47 @@ def get_setting(key, default_value):
     """안전하게 설정값을 가져오는 유틸리티 함수"""
     return st.session_state.settings.get(key, default_value)
 
-def play_audio(file_path, sentence_interval=1.0, next_sentence=False):
-    """
-    음성 파일 재생 - 문장 간격 및 다음 문장 설정 적용
-    """
+def play_audio(file_path, sentence_interval=1.0, next_sentence=False, speed=1.0, actual_speed=1.0):
+    """음성 파일 재생"""
+    if not file_path or not os.path.exists(file_path):
+        return
+
     try:
-        if not file_path or not os.path.exists(file_path):
-            st.error(f"파일 경로 오류: {file_path}")
-            return
-
-        # WAV 파일에서 실제 재생 시간 계산
-        try:
-            with wave.open(file_path, 'rb') as wav_file:
-                frames = wav_file.getnframes()
-                rate = wav_file.getframerate()
-                duration = frames / float(rate)
-        except Exception:
-            with open(file_path, 'rb') as f:
-                audio_bytes = f.read()
-            duration = len(audio_bytes) / 32000
-
-        # 파일을 바이트로 읽기
         with open(file_path, 'rb') as f:
             audio_bytes = f.read()
-        audio_base64 = base64.b64encode(audio_bytes).decode()
+        
+        if not audio_bytes:
+            return
 
-        # 고유한 ID 생성
+        audio_base64 = base64.b64encode(audio_bytes).decode()
         audio_id = f"audio_{int(time.time() * 1000)}"
         
-        # HTML 오디오 요소 생성
         st.markdown(f"""
             <audio id="{audio_id}" autoplay="true">
-                <source src="data:audio/wav;base64,{audio_base64}" type="audio/wav">
+                <source src="data:audio/wav;base64,{audio_base64}">
             </audio>
             <script>
                 (function() {{
                     const audio = document.getElementById("{audio_id}");
+                    if (!audio) return;
                     
-                    // 이전 오디오가 있으면 정지
                     if (window.currentAudio && window.currentAudio !== audio) {{
                         window.currentAudio.pause();
-                        window.currentAudio.currentTime = 0;
                         window.currentAudio.remove();
                     }}
-                    
-                    // 현재 오디오를 전역 변수에 저장
                     window.currentAudio = audio;
-                    window.audioEnded = false;
-                    
-                    // 재생 완료 이벤트
-                    audio.onended = function() {{
-                        window.audioEnded = true;
-                        if (window.currentAudio === audio) {{
-                            window.currentAudio = null;
-                        }}
-                        audio.remove();
-                    }};
-
-                    // 재생 시작 이벤트
-                    audio.onplay = function() {{
-                        window.audioEnded = false;
-                    }};
                 }})();
             </script>
         """, unsafe_allow_html=True)
 
-        # 대기 시간 계산
-        if next_sentence:
-            # 다음 문장으로 빠르게 넘어가기
-            wait_time = duration + 0.3  # 최소 대기 시간
-        else:
-            # 문장 간격 적용
-            base_wait = duration
-            
-            # 긴 문장에 대한 추가 대기 시간
-            if duration > 5:
-                extra_wait = duration * 0.1  # 10% 추가
-            else:
-                extra_wait = 0.5
-                
-            # 사용자가 설정한 문장 간격 적용
-            wait_time = base_wait + extra_wait + sentence_interval
-
-        # 최소 대기 시간 보장
-        wait_time = max(wait_time, duration + 0.3)
+        time.sleep(max(len(audio_bytes) / 32000 + sentence_interval, 0.5))
         
-        time.sleep(wait_time)
-
-    except Exception as e:
-        st.error(f"음성 재생 오류: {str(e)}")
     finally:
-        # 임시 파일 삭제
         try:
             if file_path and TEMP_DIR in Path(file_path).parents:
                 os.remove(file_path)
-        except Exception:
+        except:
             pass
-
-def save_learning_state(df, current_index, session_state):
-    """
-    학습 상태 저장 함수 개선
-    """
-    try:
-        # 현재 학습 상태 저장
-        state_data = {
-            'current_index': current_index,
-            'timestamp': time.time(),
-            'total_rows': len(df),
-            'progress': f"{current_index}/{len(df)}",
-            'last_sentence': df.iloc[current_index]['english'] if current_index < len(df) else ""
-        }
-        
-        # 파일 저장
-        save_path = TEMP_DIR / 'learning_state.json'
-        with open(save_path, 'w', encoding='utf-8') as f:
-            json.dump(state_data, f, ensure_ascii=False, indent=2)
-            
-        st.success(f"학습 상태가 저장되었습니다. (진행률: {state_data['progress']})")
-        
-        # 세션 상태 업데이트
-        session_state.saved_index = current_index
-        session_state.has_saved_state = True
-        
-        return True
-        
-    except Exception as e:
-        st.error(f"저장 중 오류 발생: {str(e)}")
-        return False
-
-def load_learning_state():
-    """
-    학습 상태 불러오기 함수 개선
-    """
-    try:
-        save_path = TEMP_DIR / 'learning_state.json'
-        
-        if not save_path.exists():
-            return None
-            
-        with open(save_path, 'r', encoding='utf-8') as f:
-            state_data = json.load(f)
-            
-        # 저장된 데이터 검증
-        required_keys = ['current_index', 'timestamp', 'total_rows']
-        if not all(key in state_data for key in required_keys):
-            st.warning("저장된 상태 데이터가 유효하지 않습니다.")
-            return None
-            
-        return state_data
-        
-    except Exception as e:
-        st.error(f"상태 불러오기 중 오류 발생: {str(e)}")
-        return None
-
-def handle_resume_learning(df):
-    """
-    학습 재개 처리 함수
-    """
-    try:
-        state_data = load_learning_state()
-        if state_data is None:
-            return 0
-            
-        # 저장된 상태와 현재 데이터 검증
-        if state_data['total_rows'] != len(df):
-            st.warning("저장된 데이터의 크기가 현재 데이터와 다릅니다.")
-            return 0
-            
-        current_index = state_data['current_index']
-        if 0 <= current_index < len(df):
-            st.success(f"이전 학습 상태를 불러왔습니다. (진행률: {current_index}/{len(df)})")
-            return current_index
-        else:
-            st.warning("유효하지 않은 인덱스입니다.")
-            return 0
-            
-    except Exception as e:
-        st.error(f"학습 재개 중 오류 발생: {str(e)}")
-        return 0
-
-async def play_audio_file(file_path):
-    """음성 파일 재생"""
-    try:
-        play_audio(file_path)  # 기존의 play_audio 함수 사용
-    except Exception as e:
-        st.error(f"음성 재생 오류: {str(e)}")
 
 async def wait_for_audio_complete(file_path=None):
     """음성 재생 완료 대기"""
