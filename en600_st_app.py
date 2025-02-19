@@ -19,6 +19,9 @@ from gtts import gTTS
 from pydub import AudioSegment
 import io
 import librosa
+import psutil
+import gc
+import hashlib
 
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -814,6 +817,20 @@ def get_voice_mapping(language, voice_setting):
 
 async def get_voice_file(text, voice, speed=1.0, output_file=None):
     try:
+        # 빈 텍스트 체크
+        if not text or text.isspace():
+            return None
+            
+        # 파일명 해시 생성
+        text_hash = hashlib.md5(text.encode()).hexdigest()
+        
+        if output_file is None:
+            output_file = TEMP_DIR / f"temp_{voice}_{speed}_{text_hash[:8]}.wav"
+            
+        # 이미 존재하는 파일이면 재사용
+        if output_file.exists():
+            return str(output_file)
+            
         # 한국어 고속 재생을 위한 처리
         if voice.startswith("ko-") and speed > 3.0:
             # 3배속 이상일 때 특수 처리
@@ -823,11 +840,8 @@ async def get_voice_file(text, voice, speed=1.0, output_file=None):
             # 일반적인 경우
             communicate = edge_tts.Communicate(text, voice, rate=f"+{int((speed-1)*100)}%")
 
-        if output_file is None:
-            output_file = TEMP_DIR / f"temp_{voice}_{speed}_{hash(text)}.wav"
-
         await communicate.save(str(output_file))
-        
+
         # 한국어 고속 재생을 위한 후처리
         if voice.startswith("ko-") and speed > 3.0:
             # 오디오 파일 처리로 추가 배속
@@ -847,7 +861,7 @@ async def get_voice_file(text, voice, speed=1.0, output_file=None):
 
         return str(output_file)
     except Exception as e:
-        st.error(f"음성 파일 생성 오류: {str(e)}")
+        st.warning(f"음성 생성 실패: {str(e)}")
         return None
 
 def create_learning_ui():
@@ -906,11 +920,22 @@ async def create_break_audio():
 
 async def start_learning():
     """학습 시작"""
-    settings = st.session_state.settings
-    sentence_count = 0
-    repeat_count = 0
-    
     try:
+        # 시작 시 임시 파일 정리
+        cleanup_temp_files()
+        
+        # 메모리 사용량 모니터링
+        process = psutil.Process()
+        if process.memory_info().rss > 400 * 1024 * 1024:  # 400MB 초과
+            cleanup_temp_files()  # 임시 파일 정리
+            if process.memory_info().rss > 500 * 1024 * 1024:  # 여전히 500MB 초과
+                st.error("메모리 사용량이 너무 높습니다. 더 적은 문장을 선택해주세요.")
+                return
+
+        settings = st.session_state.settings
+        sentence_count = 0
+        repeat_count = 0
+        
         # 선택된 시트의 데이터 읽기 - header=0으로 변경
         df = pd.read_excel(
             EXCEL_PATH,
@@ -1165,29 +1190,40 @@ async def start_learning():
                         st.success(f"학습이 완료되었습니다! (총 {settings['repeat_count']}회 반복)")
                         st.session_state.page = 'settings'
                         st.rerun()
-                        break
                 
             except Exception as e:
                 st.error(f"완료 알림음 재생 오류: {e}")
                 traceback.print_exc()
 
+        # 주기적으로 임시 파일 정리 (10문장마다)
+        if sentence_count % 10 == 0:
+            cleanup_temp_files()
+
     except PermissionError:
         st.error("엑셀 파일이 다른 프로그램에서 열려있습니다. 파일을 닫고 다시 시도해주세요.")
         return
     except Exception as e:
-        st.error(f"엑셀 파일 읽기 오류: {e}")
-        return
+        cleanup_temp_files()  # 에러 발생 시에도 정리
+        st.error(f"학습 중 오류 발생: {str(e)}")
+        traceback.print_exc()
 
 def get_column_data(df, column_name, start_idx, end_idx):
-    """안전하게 열 데이터를 가져오는 헬퍼 함수"""
+    """메모리 효율적인 데이터 로드"""
     try:
         if column_name in df.columns:
-            return df.iloc[start_idx:end_idx+1, df.columns.get_loc(column_name)].tolist()
+            # 청크 단위로 데이터 로드 (메모리 사용량 감소)
+            chunk_size = 100
+            result = []
+            for chunk_start in range(start_idx, end_idx + 1, chunk_size):
+                chunk_end = min(chunk_start + chunk_size, end_idx + 1)
+                chunk = df.loc[chunk_start:chunk_end-1, column_name].tolist()
+                result.extend(chunk)
+            return result
         else:
-            return [""] * (end_idx - start_idx + 1)  # 열이 없으면 빈 문자열로 채우기
+            return [""] * (end_idx - start_idx + 1)
     except Exception as e:
         st.warning(f"{column_name} 열 읽기 실패: {str(e)}")
-        return [""] * (end_idx - start_idx + 1)  # 에러 발생 시 빈 문자열로 채우기
+        return [""] * (end_idx - start_idx + 1)
 
 def create_personalized_ui():
     """개인별 맞춤 UI 생성"""
@@ -1432,6 +1468,22 @@ def handle_resume_learning(df):
     except Exception as e:
         st.error(f"학습 재개 중 오류 발생: {str(e)}")
         return 0
+
+def cleanup_temp_files():
+    """임시 파일 정리"""
+    try:
+        # 모든 임시 파일 삭제
+        for file in TEMP_DIR.glob("*.wav"):
+            try:
+                file.unlink(missing_ok=True)  # Python 3.8+ 에서는 missing_ok 사용 가능
+            except Exception:
+                pass
+        
+        # 메모리 정리
+        import gc
+        gc.collect()
+    except Exception:
+        pass
 
 if __name__ == "__main__":
     main()
