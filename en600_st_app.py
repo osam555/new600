@@ -36,10 +36,19 @@ LANG_DISPLAY = {
     'english': '영어',
     'chinese': '중국어',
     'japanese': '일본어',
-    'vietnamese': '베트남어'  # 베트남어 추가
+    'vietnamese': '베트남어',
+    'filipino': '필리핀어',
+    'thai': '태국어',
+    'russian': '러시아어',
+    'uzbek': '우즈베크어',
+    'mongolian': '몽골어',
+    'nepali': '네팔어',
+    'burmese': '미얀마어',
+    'indonesian': '인도네시아어',
+    'khmer': '캄보디아어'
 }
 
-# 음성 매핑에 남성 음성 추가
+# 음성 매핑에 새로운 언어 추가
 VOICE_MAPPING = {
     'english': {
         "Steffan": "en-US-SteffanNeural",
@@ -67,13 +76,51 @@ VOICE_MAPPING = {
         "Keita": "ja-JP-KeitaNeural",
     },
     'vietnamese': {
-        "HoaiMy": "vi-VN-HoaiMyNeural",  # 여성 음성
-        "NamMinh": "vi-VN-NamMinhNeural"  # 남성 음성
+        "HoaiMy": "vi-VN-HoaiMyNeural",
+        "NamMinh": "vi-VN-NamMinhNeural"
+    },
+    'filipino': {
+        "James": "fil-PH-JamesNeural",
+        "Rosa": "fil-PH-RosaNeural"
+    },
+    'thai': {  # 태국어
+        "Niwat": "th-TH-NiwatNeural",
+        "Premwadee": "th-TH-PremwadeeNeural"
+    },
+    'russian': {  # 러시아어
+        "Dmitry": "ru-RU-DmitryNeural",
+        "Svetlana": "ru-RU-SvetlanaNeural"
+    },
+    'uzbek': {  # 우즈베크어
+        "Sardor": "uz-UZ-SardorNeural",
+        "Madina": "uz-UZ-MadinaNeural"
+    },
+    'mongolian': {  # 몽골어
+        "Bataa": "mn-MN-BataaNeural",
+        "Yesui": "mn-MN-YesuiNeural"
+    },
+    'nepali': {  # 네팔어
+        "Hemkala": "ne-NP-HemkalaNeural",
+        "Sagar": "ne-NP-SagarNeural"
+    },
+    'burmese': {  # 미얀마어
+        "Thura": "my-MM-ThuraNeural",
+        "Nilar": "my-MM-NilarNeural"
+    },
+    'indonesian': {  # 인도네시아어
+        "Ardi": "id-ID-ArdiNeural",
+        "Gadis": "id-ID-GadisNeural"
+    },
+    'khmer': {  # 캄보디아어
+        "Piseth": "km-KH-PisethNeural",
+        "Sreymom": "km-KH-SreymomNeural"
     }
 }
 
-# 언어 설정
-LANGUAGES = ['english', 'korean', 'chinese', 'japanese', 'vietnamese', 'none']
+# 언어 설정 업데이트
+LANGUAGES = ['english', 'korean', 'chinese', 'japanese', 'vietnamese', 'filipino', 
+            'thai', 'russian', 'uzbek', 'mongolian', 'nepali', 'burmese', 
+            'indonesian', 'khmer', 'none']
 
 # 색상 매핑 추가
 COLOR_MAPPING = {
@@ -86,6 +133,31 @@ COLOR_MAPPING = {
     'ivory': '#FFFFF0',
     'pink': '#FFC0CB'
 }
+
+LANGUAGE_MAPPING = {
+    'en': {'code': 'en-US', 'name': '미국'},
+    'ko': {'code': 'ko-KR', 'name': '한국'},
+    'zh': {'code': 'zh-CN', 'name': '중국'},
+    'vi': {'code': 'vi-VN', 'name': '베트남'},
+    'ja': {'code': 'ja-JP', 'name': '일본'},
+    'th': {'code': 'th-TH', 'name': '태국'},
+    'tl': {'code': 'tl-PH', 'name': '필리핀'},
+    'ru': {'code': 'ru-RU', 'name': '러시아'},
+    'uz': {'code': 'uz-UZ', 'name': '우즈벡'},
+    'mn': {'code': 'mn-MN', 'name': '몽골'},
+    'ne': {'code': 'ne-NP', 'name': '네팔'},
+    'my': {'code': 'my-MM', 'name': '미얀마'},
+    'id': {'code': 'id-ID', 'name': '인니'},
+    'km': {'code': 'km-KH', 'name': '캄보디아'}
+}
+
+def format_column_header(lang_code):
+    """
+    언어 코드를 기반으로 '[코드]-[국가명]' 형식의 컬럼 헤더를 반환합니다.
+    """
+    if lang_code in LANGUAGE_MAPPING:
+        return f"{lang_code}-{LANGUAGE_MAPPING[lang_code]['name']}"
+    return lang_code
 
 def initialize_session_state():
     """강제 초기화 추가"""
@@ -146,6 +218,48 @@ def initialize_session_state():
         'vietnamese_font': 'Arial',  # 베트남어 폰트 기본값 추가
         'vietnamese_font_size': 30,
         'vietnamese_speed': 1.0,
+        'first_font_size': 32,
+        'second_font_size': 32,
+        'third_font_size': 32,
+        'first_color': '#00FF00',   # 초록색
+        'second_color': '#FFFFF0',  # 아이보리
+        'third_color': '#00FF00',   # 초록색
+        'fil_voice': 'James',  # 필리핀어 기본 음성
+        'filipino_speed': 1.2,  # 필리핀어 기본 속도
+        'filipino_font': 'Arial',  # 필리핀어 기본 폰트
+        'filipino_font_size': 32,  # 필리핀어 기본 폰트 크기
+        'thai_voice': 'Niwat',
+        'russian_voice': 'Dmitry',
+        'uzbek_voice': 'Sardor',
+        'mongolian_voice': 'Bataa',
+        'nepali_voice': 'Hemkala',
+        'burmese_voice': 'Thura',
+        'indonesian_voice': 'Ardi',
+        'khmer_voice': 'Piseth',
+        'thai_speed': 1.2,
+        'russian_speed': 1.2,
+        'uzbek_speed': 1.2,
+        'mongolian_speed': 1.2,
+        'nepali_speed': 1.2,
+        'burmese_speed': 1.2,
+        'indonesian_speed': 1.2,
+        'khmer_speed': 1.2,
+        'thai_font': 'Arial',
+        'russian_font': 'Arial',
+        'uzbek_font': 'Arial',
+        'mongolian_font': 'Arial',
+        'nepali_font': 'Arial',
+        'burmese_font': 'Arial',
+        'indonesian_font': 'Arial',
+        'khmer_font': 'Arial',
+        'thai_font_size': 32,
+        'russian_font_size': 32,
+        'uzbek_font_size': 32,
+        'mongolian_font_size': 32,
+        'nepali_font_size': 32,
+        'burmese_font_size': 32,
+        'indonesian_font_size': 32,
+        'khmer_font_size': 32
     }
     
     # 설정이 없는 경우 기본값으로 초기화
@@ -352,11 +466,11 @@ def create_settings_ui(return_to_learning=False):
                     key="sheet_select"
                 )
                 
-                # 선택된 시트 데이터 읽기
+                # 선택된 시트 데이터 읽기 - header=0으로 변경하여 첫 행을 헤더로 사용
                 df = pd.read_excel(
                     EXCEL_PATH,
                     sheet_name=selected_sheet,
-                    header=None,
+                    header=0,  # 첫 행을 헤더로 사용
                     engine='openpyxl'
                 )
                 max_row = len(df)
@@ -442,16 +556,24 @@ def create_settings_ui(return_to_learning=False):
         # 언어 순위 설정
         st.subheader("자막 | 음성 | 속도")
         col1, col2, col3 = st.columns(3)
+        
+        # 모든 지원 언어 리스트
+        supported_languages = [
+            'korean', 'english', 'chinese', 'japanese', 'vietnamese', 'filipino',
+            'thai', 'russian', 'uzbek', 'mongolian', 'nepali', 'burmese', 
+            'indonesian', 'khmer'
+        ]
+        
         with col1:
-            settings['first_lang'] = st.selectbox("1번째     언어",
-                options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
-                index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(settings['first_lang']),
+            settings['first_lang'] = st.selectbox("1번째 언어",
+                options=supported_languages,
+                index=supported_languages.index(settings['first_lang']),
                 format_func=lambda x: LANG_DISPLAY[x],
                 key="settings_first_lang")
             # 음성 재생 횟수를 선택박스로 변경
             current_repeat = max(1, min(settings.get('first_repeat', 1), 5))  # 1-5 사이로 제한
             settings['first_repeat'] = st.selectbox("음성 재생(횟수)",
-                                      options=list(range(0, 3)),  # 1-5회
+                                      options=list(range(0, 3)),  # 0-2회
                                       index=current_repeat-1,  # 0-based index
                                       key="first_repeat")
             # 배속을 선택박스로 변경
@@ -470,14 +592,14 @@ def create_settings_ui(return_to_learning=False):
 
         with col2:
             settings['second_lang'] = st.selectbox("2번째 언어",
-                options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
-                index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(settings['second_lang']),
+                options=supported_languages,
+                index=supported_languages.index(settings['second_lang']),
                 format_func=lambda x: LANG_DISPLAY[x],
                 key="settings_second_lang")
             # 음성 재생 횟수를 선택박스로 변경
             current_repeat = max(1, min(settings.get('second_repeat', 1), 5))  # 1-5 사이로 제한
             settings['second_repeat'] = st.selectbox("음성 재생(횟수)",
-                                       options=list(range(1, 3)),  # 1-5회
+                                       options=list(range(1, 3)),  # 1-2회
                                        index=current_repeat-1,  # 0-based index
                                        key="second_repeat")
             # 배속을 선택박스로 변경
@@ -494,10 +616,12 @@ def create_settings_ui(return_to_learning=False):
                                       key="second_speed")
 
         with col3:
+            # 3순위 언어에는 'none' 옵션 추가
+            third_options = ['none'] + supported_languages
             settings['third_lang'] = st.selectbox("3번째 언어",
-                options=['none', 'korean', 'english', 'chinese', 'japanese', 'vietnamese'],  # 'none' 옵션 추가
-                index=['none', 'korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(settings['third_lang']),
-                format_func=lambda x: '없음' if x == 'none' else LANG_DISPLAY.get(x, x),  # 'none'을 '없음'으로 표시
+                options=third_options,
+                index=third_options.index(settings['third_lang']),
+                format_func=lambda x: '없음' if x == 'none' else LANG_DISPLAY.get(x, x),
                 key="settings_third_lang")
             
             # 'none'이 아닐 때만 음성 재생 횟수와 속도 설정 표시
@@ -505,7 +629,7 @@ def create_settings_ui(return_to_learning=False):
                 # 음성 재생 횟수를 선택박스로 변경
                 current_repeat = max(1, min(settings.get('third_repeat', 1), 5))  # 1-5 사이로 제한
                 settings['third_repeat'] = st.selectbox("음성 재생(횟수)",
-                                          options=list(range(1, 3)),  # 1-5회
+                                          options=list(range(1, 3)),  # 1-2회
                                           index=current_repeat-1,  # 0-based index
                                           key="third_repeat")
                 # 배속을 선택박스로 변경
@@ -523,8 +647,8 @@ def create_settings_ui(return_to_learning=False):
             else:
                 # 'none'일 때는 재생 횟수를 0으로 설정
                 settings['third_repeat'] = 0
-        
-        # 새로운 학습 시작 버튼 추가 (자막|음성|속도 섹션 아래)
+
+        # 학습 시작 버튼 추가 (자막|음성|속도 섹션 아래)
         if st.button("▶️ 학습 시작", use_container_width=True, key="start_btn_middle"):
             save_settings(settings)
             st.session_state.page = 'learning'
@@ -583,146 +707,75 @@ def create_settings_ui(return_to_learning=False):
             if settings['break_enabled']:
                 settings['break_interval'] = int(settings['break_interval'])
 
-        # 자막 숨김 옵션을 한 줄로 배치하고 자막 유지 모드를 첫 번째로 이동
+        # 자막 숨김 옵션을 한 줄로 배치
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             settings['keep_subtitles'] = st.checkbox("자막유지 모드",
                                                   value=settings.get('keep_subtitles', True),
                                                   key="keep_subtitles_checkbox")
         with col2:
-            hide_first = st.checkbox("1번째 자막 숨김",
+            hide_first = st.checkbox("1순위 자막 숨김",
                                    value=settings['hide_subtitles']['first_lang'],
                                    key="first_hide")
         with col3:
-            hide_second = st.checkbox("2번째 자막 숨김",
+            hide_second = st.checkbox("2순위 자막 숨김",
                                     value=settings['hide_subtitles']['second_lang'],
                                     key="second_hide")
         with col4:
-            hide_third = st.checkbox("3번째 자막 숨김",
+            hide_third = st.checkbox("3순위 자막 숨김",
                                    value=settings['hide_subtitles']['third_lang'],
                                    key="third_hide")
 
-        # 폰트 및 색상 설정 섹션
+        # 폰트 크기 및 색상 설정
         st.subheader("폰트 크기 | 색깔")
-        col1, col2, col3, col4, col5 = st.columns(5)
+        col1, col2, col3 = st.columns(3)
+        
         with col1:
-            settings['korean_font_size'] = st.number_input("한글",
-                                                        value=settings['korean_font_size'],
-                                                        min_value=10,
-                                                        max_value=50,
-                                                        step=1,
-                                                        key="korean_font_size_learning")
-            default_color = 'green'  # 기본값을 초록색으로 변경
-            selected_color = st.selectbox("한글",
+            st.markdown("**1순위 언어**")
+            settings['first_font_size'] = st.number_input("폰트 크기",
+                                                      value=settings.get('first_font_size', 32),
+                                                      min_value=10,
+                                                      max_value=50,
+                                                      step=1,
+                                                      key="first_font_size")
+            default_color = 'green'  # 1순위 기본값: 초록색
+            selected_color = st.selectbox("글자 색상",
                                         options=list(COLOR_MAPPING.keys()),
                                         index=list(COLOR_MAPPING.keys()).index(default_color),
-                                        key="korean_color_select")
-            settings['korean_color'] = COLOR_MAPPING[selected_color]
+                                        key="first_color_select")
+            settings['first_color'] = COLOR_MAPPING[selected_color]
 
         with col2:
-            settings['english_font_size'] = st.number_input("영어",
-                                                        value=settings['english_font_size'],
-                                                        min_value=10,
-                                                        max_value=50,
-                                                        step=1,
-                                                        key="english_font_size_learning")
-            default_color = 'ivory'  # 기본값을 아이보리로 변경
-            selected_color = st.selectbox("영어",
+            st.markdown("**2순위 언어**")
+            settings['second_font_size'] = st.number_input("폰트 크기",
+                                                       value=settings.get('second_font_size', 32),
+                                                       min_value=10,
+                                                       max_value=50,
+                                                       step=1,
+                                                       key="second_font_size")
+            default_color = 'ivory'  # 2순위 기본값: 아이보리
+            selected_color = st.selectbox("글자 색상",
                                         options=list(COLOR_MAPPING.keys()),
                                         index=list(COLOR_MAPPING.keys()).index(default_color),
-                                        key="english_color_select")
-            settings['english_color'] = COLOR_MAPPING[selected_color]
+                                        key="second_color_select")
+            settings['second_color'] = COLOR_MAPPING[selected_color]
 
         with col3:
-            settings['chinese_font_size'] = st.number_input("중국어",
-                                                        value=settings['chinese_font_size'],
-                                                        min_value=10,
-                                                        max_value=50,
-                                                        step=1,
-                                                        key="chinese_font_size_learning")
-            default_color = 'green'  # 기본값을 초록색으로 변경
-            selected_color = st.selectbox("중국어",
+            st.markdown("**3순위 언어**")
+            settings['third_font_size'] = st.number_input("폰트 크기",
+                                                      value=settings.get('third_font_size', 32),
+                                                      min_value=10,
+                                                      max_value=50,
+                                                      step=1,
+                                                      key="third_font_size")
+            default_color = 'green'  # 3순위 기본값: 초록색
+            selected_color = st.selectbox("글자 색상",
                                         options=list(COLOR_MAPPING.keys()),
                                         index=list(COLOR_MAPPING.keys()).index(default_color),
-                                        key="chinese_color_select")
-            settings['chinese_color'] = COLOR_MAPPING[selected_color]
+                                        key="third_color_select")
+            settings['third_color'] = COLOR_MAPPING[selected_color]
 
-        with col4:
-            settings['japanese_font_size'] = st.number_input("일본어",
-                                                        value=settings['japanese_font_size'],
-                                                        min_value=10,
-                                                        max_value=50,
-                                                        step=1,
-                                                        key="japanese_font_size_learning")
-            default_color = 'green' if st.get_option("theme.base") == "dark" else 'white'
-            selected_color = st.selectbox("일본어",
-                                        options=list(COLOR_MAPPING.keys()),
-                                        index=list(COLOR_MAPPING.keys()).index(default_color),
-                                        key="japanese_color_select")
-            settings['japanese_color'] = COLOR_MAPPING[selected_color]
-
-        with col5:
-            settings['vietnamese_font_size'] = st.number_input("베트남어",
-                                                        value=settings['vietnamese_font_size'],
-                                                        min_value=10,
-                                                        max_value=50,
-                                                        step=1,
-                                                        key="vietnamese_font_size_learning")
-            default_color = 'green' if st.get_option("theme.base") == "dark" else 'white'
-            selected_color = st.selectbox("베트남어",
-                                          options=list(COLOR_MAPPING.keys()),
-                                          index=list(COLOR_MAPPING.keys()).index(default_color),
-                                          key="vietnamese_color_select")
-            settings['vietnamese_color'] = COLOR_MAPPING[selected_color]
-
-        # 폰트 크기 변경 시 즉시 반영을 위한 CSS 업데이트
-        st.markdown(f"""
-            <style>
-                .english-text {{
-                    font-size: {settings['english_font_size']}px !important;
-                    color: {settings['english_color']} !important;
-                }}
-                .korean-text {{
-                    font-size: {settings['korean_font_size']}px !important;
-                    color: {settings['korean_color']} !important;
-                }}
-                .chinese-text {{
-                    font-size: {settings['chinese_font_size']}px !important;
-                    color: {settings['chinese_color']} !important;
-                }}
-                .japanese-text {{
-                    font-size: {settings['japanese_font_size']}px !important;
-                    color: {settings['japanese_color']} !important;
-                }}
-                .vietnamese-text {{
-                    font-size: {settings['vietnamese_font_size']}px !important;
-                    color: {settings['vietnamese_color']} !important;
-                }}
-            </style>
-        """, unsafe_allow_html=True)
-
-        # 입력 필드에 CSS 클래스 적용
-        st.markdown("""
-            <style>
-                /* 숫자 입력 필드 스타일 */
-                div[data-testid="stNumberInput"] {
-                    max-width: 150px;
-                }
-                
-                /* 숫자 입력 필드 레이블 스타일 */
-                div[data-testid="stNumberInput"] label {
-                    font-size: 15px !important;
-                }
-                
-                /* 숫자 입력 필드 입력창 스타일 */
-                div[data-testid="stNumberInput"] input {
-                    font-size: 15px !important;
-                    padding: 4px 8px !important;
-                }
-            </style>
-        """, unsafe_allow_html=True)
-
-        # 기존 맨 아래 학습 시작 버튼 유지
+        # 학습 시작 버튼 추가 (폰트 설정 아래)
         if st.button("▶️ 학습 시작", use_container_width=True, key="start_btn_bottom"):
             save_settings(settings)
             st.session_state.page = 'learning'
@@ -737,7 +790,16 @@ def get_voice_mapping(language, voice_setting):
             'english': 'Steffan',
             'chinese': 'Yunjian',
             'japanese': 'Nanami',
-            'vietnamese': 'HoaiMy'
+            'vietnamese': 'HoaiMy',
+            'filipino': 'James',
+            'thai': 'Niwat',
+            'russian': 'Dmitry',
+            'uzbek': 'Sardor',
+            'mongolian': 'Bataa',
+            'nepali': 'Hemkala',
+            'burmese': 'Thura',
+            'indonesian': 'Ardi',
+            'khmer': 'Piseth'
         }
         
         # 설정된 음성이 없거나 매핑에 없는 경우 기본값 사용
@@ -849,31 +911,266 @@ async def start_learning():
     repeat_count = 0
     
     try:
-        # 선택된 시트의 데이터 읽기
+        # 선택된 시트의 데이터 읽기 - header=0으로 변경
         df = pd.read_excel(
             EXCEL_PATH,
-            sheet_name=settings.get('selected_sheet', 0),  # 기본값: 첫 번째 시트
-            header=None,
+            sheet_name=settings.get('selected_sheet', 0),
+            header=0,  # 첫 행을 헤더로 사용
             engine='openpyxl'
         )
         start_idx = settings['start_row'] - 1
         end_idx = settings['end_row'] - 1
         
-        # 필요한 열만 선택 (존재하는 열만)
-        english = df.iloc[start_idx:end_idx+1, 0].tolist()  # A열: 영어
-        korean = df.iloc[start_idx:end_idx+1, 1].tolist()   # B열: 한국어
-        chinese = df.iloc[start_idx:end_idx+1, 2].tolist()  # C열: 중국어
-        japanese = df.iloc[start_idx:end_idx+1, 3].tolist() # D열: 일본어
+        # 모든 언어 열 읽기 (없는 열은 빈 문자열로 채우기)
+        data = {
+            'english': get_column_data(df, 'en-미국', start_idx, end_idx),
+            'korean': get_column_data(df, 'ko-한국', start_idx, end_idx),
+            'chinese': get_column_data(df, 'zh-중국', start_idx, end_idx),
+            'japanese': get_column_data(df, 'ja-일본', start_idx, end_idx),
+            'vietnamese': get_column_data(df, 'vi-베트남', start_idx, end_idx),
+            'filipino': get_column_data(df, 'tl-필리핀', start_idx, end_idx),
+            'thai': get_column_data(df, 'th-태국', start_idx, end_idx),
+            'russian': get_column_data(df, 'ru-러시아', start_idx, end_idx),
+            'uzbek': get_column_data(df, 'uz-우즈벡', start_idx, end_idx),
+            'mongolian': get_column_data(df, 'mn-몽골', start_idx, end_idx),
+            'nepali': get_column_data(df, 'ne-네팔', start_idx, end_idx),
+            'burmese': get_column_data(df, 'my-미얀마', start_idx, end_idx),
+            'indonesian': get_column_data(df, 'id-인니', start_idx, end_idx),
+            'khmer': get_column_data(df, 'km-캄보디아', start_idx, end_idx)
+        }
+
+        total_sentences = len(data['english'])
+
+        # 데이터 언패킹
+        english, korean, chinese, japanese, vietnamese, filipino, thai, russian, \
+        uzbek, mongolian, nepali, burmese, indonesian, khmer = [data[lang] for lang in [
+            'english', 'korean', 'chinese', 'japanese', 'vietnamese', 'filipino',
+            'thai', 'russian', 'uzbek', 'mongolian', 'nepali', 'burmese',
+            'indonesian', 'khmer'
+        ]]
+
+        # 학습 UI 생성 및 배속 정보 가져오기
+        progress, status, subtitles, speed_info = create_learning_ui()
         
-        # 베트남어 열이 있는 경우에만 읽기
-        vietnamese = []
-        if len(df.columns) > 4:  # E열이 존재하는 경우
-            vietnamese = df.iloc[start_idx:end_idx+1, 4].tolist()
-        else:
-            vietnamese = [""] * (end_idx - start_idx + 1)  # 빈 문자열로 채우기
+        # 자막을 위한 빈 컨테이너
+        subtitles = [st.empty() for _ in range(3)]
         
-        total_sentences = len(english)
-        
+        # 이전 문장 자막 저장용 변수
+        prev_subtitles = {'second': None, 'third': None}
+
+        while True:
+            for i, (eng, kor, chn, jpn, vn, fil, thai, rus, uzb, mng, nep, bur, ind, khm) in enumerate(zip(
+                english, korean, chinese, japanese, vietnamese, filipino, thai, russian, 
+                uzbek, mongolian, nepali, burmese, indonesian, khmer)):
+                
+                # 언어별 텍스트와 음성 매핑
+                lang_mapping = {
+                    'korean': {'text': kor, 'voice': get_voice_mapping('korean', settings.get('kor_voice')), 'speed': settings.get('korean_speed', 1.2)},
+                    'english': {'text': eng, 'voice': get_voice_mapping('english', settings.get('eng_voice')), 'speed': settings.get('english_speed', 1.2)},
+                    'chinese': {'text': chn, 'voice': get_voice_mapping('chinese', settings.get('zh_voice')), 'speed': settings.get('chinese_speed', 1.2)},
+                    'japanese': {'text': jpn, 'voice': get_voice_mapping('japanese', settings.get('jp_voice')), 'speed': settings.get('japanese_speed', 1.2)},
+                    'vietnamese': {'text': vn, 'voice': get_voice_mapping('vietnamese', settings.get('vi_voice')), 'speed': settings.get('vietnamese_speed', 1.2)},
+                    'filipino': {'text': fil, 'voice': get_voice_mapping('filipino', settings.get('fil_voice')), 'speed': settings.get('filipino_speed', 1.2)},
+                    'thai': {'text': thai, 'voice': get_voice_mapping('thai', settings.get('thai_voice')), 'speed': settings.get('thai_speed', 1.2)},
+                    'russian': {'text': rus, 'voice': get_voice_mapping('russian', settings.get('russian_voice')), 'speed': settings.get('russian_speed', 1.2)},
+                    'uzbek': {'text': uzb, 'voice': get_voice_mapping('uzbek', settings.get('uzbek_voice')), 'speed': settings.get('uzbek_speed', 1.2)},
+                    'mongolian': {'text': mng, 'voice': get_voice_mapping('mongolian', settings.get('mongolian_voice')), 'speed': settings.get('mongolian_speed', 1.2)},
+                    'nepali': {'text': nep, 'voice': get_voice_mapping('nepali', settings.get('nepali_voice')), 'speed': settings.get('nepali_speed', 1.2)},
+                    'burmese': {'text': bur, 'voice': get_voice_mapping('burmese', settings.get('burmese_voice')), 'speed': settings.get('burmese_speed', 1.2)},
+                    'indonesian': {'text': ind, 'voice': get_voice_mapping('indonesian', settings.get('indonesian_voice')), 'speed': settings.get('indonesian_speed', 1.2)},
+                    'khmer': {'text': khm, 'voice': get_voice_mapping('khmer', settings.get('khmer_voice')), 'speed': settings.get('khmer_speed', 1.2)}
+                }
+
+                progress.progress((i + 1) / total_sentences)
+                
+                # 진행 상태와 배속 정보 표시
+                speed_info = []
+                
+                # 순위에 따라 실제 재생되는 음성의 배속만 표시
+                for lang, repeat in [
+                    (settings['first_lang'], settings['first_repeat']),
+                    (settings['second_lang'], settings['second_repeat']),
+                    (settings['third_lang'], settings['third_repeat'])
+                ]:
+                    if repeat > 0:  # 재생 횟수가 0보다 큰 경우만 표시
+                        speed = settings.get(f'{lang}_speed', 1.2)
+                        speed_text = str(int(speed)) if speed.is_integer() else f"{speed:.1f}"
+                        
+                        # 언어별 한글 표시
+                        lang_display = {
+                            'korean': '한글',
+                            'english': '영어',
+                            'chinese': '중국어',
+                            'japanese': '일본어',
+                            'vietnamese': '베트남어'
+                        }.get(lang, lang)
+                        
+                        speed_info.append(f"{lang_display} {speed_text}배")
+                
+                # 배속 정보를 하나의 문자열로 결합
+                speed_display = " | ".join(speed_info)
+                
+                # 문장 번호 계산 (엑셀 행 번호 사용)
+                sentence_number = start_idx + i + 1
+                sentence_number_display = f"No.{sentence_number:03d}"
+                
+                # 현재 시간과 마지막 업데이트 시간의 차이를 계산
+                current_time = time.time()
+                time_diff = current_time - st.session_state.last_update_time
+                
+                # 1분(60초)마다 누적 시간 업데이트
+                if time_diff >= 60:
+                    minutes_to_add = int(time_diff / 60)
+                    st.session_state.today_total_study_time += minutes_to_add
+                    st.session_state.last_update_time = current_time
+                    # 학습 시간 저장
+                    save_study_time()
+                
+                # 상태 표시
+                status.markdown(
+                    f'<span style="color: red">{sentence_number_display}</span> '
+                    f'<span class="separator">•</span> '
+                    f'<span style="color: #00FF00">{i+1}/{total_sentences}</span> '
+                    f'<span class="separator">•</span> '
+                    f'<span style="color: #00FF00">{speed_display}</span> '
+                    f'<span class="separator">•</span> '
+                    f'<span style="color: red">학습: {int((current_time - st.session_state.start_time) / 60):02d}분</span> '
+                    f'<span class="separator">•</span> '
+                    f'<span style="color: #00FF00">오늘: {st.session_state.today_total_study_time:02d}분</span>',
+                    unsafe_allow_html=True
+                )
+
+                # 실시간 CSS 업데이트
+                st.markdown(f"""
+                    <style>
+                        div[data-testid="stMarkdownContainer"] {{
+                            font-size: {settings['korean_font_size']}px !important;
+                        }}
+                        .korean-text {{
+                            color: {settings['korean_color']} !important;
+                        }}
+                        .english-text {{
+                            color: {settings['english_color']} !important;
+                        }}
+                        .chinese-text {{
+                            color: {settings['chinese_color']} !important;
+                        }}
+                        .japanese-text {{
+                            color: {settings['japanese_color']} !important;
+                        }}
+                        .vietnamese-text {{
+                            color: {settings['vietnamese_color']} !important;
+                        }}
+                    </style>
+                """, unsafe_allow_html=True)
+
+                # 순위별 자막 표시
+                for rank, (lang, repeat) in enumerate([
+                    (settings['first_lang'], settings['first_repeat']),
+                    (settings['second_lang'], settings['second_repeat']),
+                    (settings['third_lang'], settings['third_repeat'])
+                ]):
+                    if lang != 'none':
+                        # 자막 표시
+                        if not settings['hide_subtitles'][f'{["first", "second", "third"][rank]}_lang']:
+                            text = lang_mapping[lang]['text']
+                            font = settings.get(f'{lang}_font', 'Arial')
+                            color = settings.get(f'{["first", "second", "third"][rank]}_color', '#00FF00')
+                            size = settings.get(f'{["first", "second", "third"][rank]}_font_size', 32)
+                            
+                            subtitles[rank].markdown(
+                                f'<div class="{["first", "second", "third"][rank]}-text" style="font-family: {font}; '
+                                f'color: {color}; font-size: {size}px;">{text}</div>',
+                                unsafe_allow_html=True
+                            )
+                        
+                        # 음성 재생 시도
+                        for _ in range(repeat):
+                            try:
+                                audio_file = await get_voice_file(
+                                    lang_mapping[lang]['text'],
+                                    lang_mapping[lang]['voice'],
+                                    lang_mapping[lang]['speed']
+                                )
+                                if audio_file:
+                                    play_audio(audio_file)
+                                    if _ < repeat - 1:
+                                        await asyncio.sleep(settings['spacing'])
+                            except Exception as e:
+                                st.warning(f"{LANG_DISPLAY[lang]} 음성 재생 불가: {str(e)}")
+                                await asyncio.sleep(1)  # 에러 시 1초 대기
+                                continue
+
+                # 다음 문장으로 넘어가기 전 대기
+                await asyncio.sleep(settings['next_sentence_time'])
+
+                # 브레이크 체크
+                sentence_count += 1
+                if settings['break_enabled'] and sentence_count % settings['break_interval'] == 0:
+                    try:
+                        status.warning(f"🔄 {settings['break_interval']}문장 완료! {settings['break_duration']}초간 휴식...")
+                        
+                        # 1. 먼저 break.wav 알림음 재생
+                        break_sound_path = SCRIPT_DIR / 'base/break.wav'
+                        if break_sound_path.exists():
+                            play_audio(str(break_sound_path))
+                            await asyncio.sleep(1)  # 알림음이 완전히 재생될 때까지 대기
+                        
+                        # 2. 브레이크 음성 메시지 생성 및 재생
+                        break_msg = "쉬어가는 시간입니다, 5초간의 호흡을 느껴보세요"
+                        break_audio = await get_voice_file(break_msg, VOICE_MAPPING['korean']['선희'], 1.0)
+                        if break_audio:
+                            play_audio(break_audio)
+                            # 음성 메시지 재생 시간 계산 (대략적으로 메시지 길이에 따라)
+                            await asyncio.sleep(3)  # 메시지가 재생될 때까지 대기
+                        
+                        # 3. 남은 휴식 시간 대기
+                        remaining_time = max(0, settings['break_duration'] - 4)  # 알림음과 메시지 재생 시간을 고려
+                        if remaining_time > 0:
+                            await asyncio.sleep(remaining_time)
+                        
+                        status.empty()
+                        
+                    except Exception as e:
+                        st.error(f"브레이크 처리 중 오류: {e}")
+                        traceback.print_exc()
+
+            # 학습 완료 시
+            try:
+                # 마지막 시간 업데이트
+                current_time = time.time()
+                time_diff = current_time - st.session_state.last_update_time
+                if time_diff >= 60:
+                    minutes_to_add = int(time_diff / 60)
+                    st.session_state.today_total_study_time += minutes_to_add
+                    st.session_state.last_update_time = current_time
+                    # 학습 시간 저장
+                    save_study_time()
+                
+                # final.wav 재생
+                final_sound_path = SCRIPT_DIR / 'base/final.wav'
+                if final_sound_path.exists():
+                    play_audio(str(final_sound_path))
+                    await asyncio.sleep(1)
+                
+                if settings['auto_repeat']:
+                    repeat_count += 1
+                    if repeat_count < settings['repeat_count']:
+                        # 반복 횟수가 남았으면 처음부터 다시 시작
+                        sentence_count = 0
+                        status.info(f"반복 중... ({repeat_count}/{settings['repeat_count']})")
+                        continue
+                    else:
+                        # 반복 횟수를 모두 채우면 학습 종료
+                        st.success(f"학습이 완료되었습니다! (총 {settings['repeat_count']}회 반복)")
+                        st.session_state.page = 'settings'
+                        st.rerun()
+                        break
+                
+            except Exception as e:
+                st.error(f"완료 알림음 재생 오류: {e}")
+                traceback.print_exc()
+
     except PermissionError:
         st.error("엑셀 파일이 다른 프로그램에서 열려있습니다. 파일을 닫고 다시 시도해주세요.")
         return
@@ -881,246 +1178,16 @@ async def start_learning():
         st.error(f"엑셀 파일 읽기 오류: {e}")
         return
 
-    # 학습 UI 생성 및 배속 정보 가져오기
-    progress, status, subtitles, speed_info = create_learning_ui()
-    
-    # 자막을 위한 빈 컨테이너
-    subtitles = [st.empty() for _ in range(3)]
-    
-    # 이전 문장 자막 저장용 변수
-    prev_subtitles = {'second': None, 'third': None}
-
-    while True:
-        for i, (eng, kor, chn, jpn, vn) in enumerate(zip(english, korean, chinese, japanese, vietnamese)):
-            # 언어별 텍스트와 음성 매핑
-            lang_mapping = {
-                'korean': {
-                    'text': kor, 
-                    'voice': get_voice_mapping('korean', settings.get('kor_voice')), 
-                    'speed': settings.get('korean_speed', 1.2)
-                },
-                'english': {
-                    'text': eng, 
-                    'voice': get_voice_mapping('english', settings.get('eng_voice')), 
-                    'speed': settings.get('english_speed', 1.2)
-                },
-                'chinese': {
-                    'text': chn, 
-                    'voice': get_voice_mapping('chinese', settings.get('zh_voice')), 
-                    'speed': settings.get('chinese_speed', 1.2)
-                },
-                'japanese': {
-                    'text': jpn, 
-                    'voice': get_voice_mapping('japanese', settings.get('jp_voice')), 
-                    'speed': settings.get('japanese_speed', 1.2)
-                },
-                'vietnamese': {
-                    'text': vn, 
-                    'voice': get_voice_mapping('vietnamese', settings.get('vi_voice')), 
-                    'speed': settings.get('vietnamese_speed', 1.2)
-                }
-            }
-
-            progress.progress((i + 1) / total_sentences)
-            
-            # 진행 상태와 배속 정보 표시
-            speed_info = []
-            
-            # 순위에 따라 실제 재생되는 음성의 배속만 표시
-            for lang, repeat in [
-                (settings['first_lang'], settings['first_repeat']),
-                (settings['second_lang'], settings['second_repeat']),
-                (settings['third_lang'], settings['third_repeat'])
-            ]:
-                if repeat > 0:  # 재생 횟수가 0보다 큰 경우만 표시
-                    speed = settings.get(f'{lang}_speed', 1.2)
-                    speed_text = str(int(speed)) if speed.is_integer() else f"{speed:.1f}"
-                    
-                    # 언어별 한글 표시
-                    lang_display = {
-                        'korean': '한글',
-                        'english': '영어',
-                        'chinese': '중국어',
-                        'japanese': '일본어',
-                        'vietnamese': '베트남어'
-                    }.get(lang, lang)
-                    
-                    speed_info.append(f"{lang_display} {speed_text}배")
-            
-            # 배속 정보를 하나의 문자열로 결합
-            speed_display = " | ".join(speed_info)
-            
-            # 문장 번호 계산 (엑셀 행 번호 사용)
-            sentence_number = start_idx + i + 1
-            sentence_number_display = f"No.{sentence_number:03d}"
-            
-            # 현재 시간과 마지막 업데이트 시간의 차이를 계산
-            current_time = time.time()
-            time_diff = current_time - st.session_state.last_update_time
-            
-            # 1분(60초)마다 누적 시간 업데이트
-            if time_diff >= 60:
-                minutes_to_add = int(time_diff / 60)
-                st.session_state.today_total_study_time += minutes_to_add
-                st.session_state.last_update_time = current_time
-                # 학습 시간 저장
-                save_study_time()
-            
-            # 상태 표시
-            status.markdown(
-                f'<span style="color: red">{sentence_number_display}</span> '
-                f'<span class="separator">•</span> '
-                f'<span style="color: #00FF00">{i+1}/{total_sentences}</span> '
-                f'<span class="separator">•</span> '
-                f'<span style="color: #00FF00">{speed_display}</span> '
-                f'<span class="separator">•</span> '
-                f'<span style="color: red">학습: {int((current_time - st.session_state.start_time) / 60):02d}분</span> '
-                f'<span class="separator">•</span> '
-                f'<span style="color: #00FF00">오늘: {st.session_state.today_total_study_time:02d}분</span>',
-                unsafe_allow_html=True
-            )
-
-            # 실시간 CSS 업데이트
-            st.markdown(f"""
-                <style>
-                    div[data-testid="stMarkdownContainer"] {{
-                        font-size: {settings['korean_font_size']}px !important;
-                    }}
-                    .korean-text {{
-                        color: {settings['korean_color']} !important;
-                    }}
-                    .english-text {{
-                        color: {settings['english_color']} !important;
-                    }}
-                    .chinese-text {{
-                        color: {settings['chinese_color']} !important;
-                    }}
-                    .japanese-text {{
-                        color: {settings['japanese_color']} !important;
-                    }}
-                    .vietnamese-text {{
-                        color: {settings['vietnamese_color']} !important;
-                    }}
-                </style>
-            """, unsafe_allow_html=True)
-
-            # 순위별 자막 표시
-            for rank, (lang, repeat) in enumerate([
-                (settings['first_lang'], settings['first_repeat']),
-                (settings['second_lang'], settings['second_repeat']),
-                (settings['third_lang'], settings['third_repeat'])
-            ]):
-                if lang != 'none':  # 'none'이 아닌 경우만 자막 표시
-                    if not settings['hide_subtitles'][f'{["first", "second", "third"][rank]}_lang']:
-                        text = lang_mapping[lang]['text']
-                        font = settings.get(f'{lang}_font', 'Arial')
-                        color = settings.get(f'{lang}_color', '#00FF00')
-                        size = settings.get(f'{lang}_font_size', 28)
-                        
-                        subtitles[rank].markdown(
-                            f'<div class="{lang}-text" style="font-family: {font}; '
-                            f'color: {color}; font-size: {size}px;">{text}</div>',
-                            unsafe_allow_html=True
-                        )
-
-            # 순위별 음성 재생
-            for lang, repeat in [
-                (settings['first_lang'], settings['first_repeat']),
-                (settings['second_lang'], settings['second_repeat']),
-                (settings['third_lang'], settings['third_repeat'])
-            ]:
-                for _ in range(repeat):
-                    audio_file = await get_voice_file(
-                        lang_mapping[lang]['text'],
-                        lang_mapping[lang]['voice'],
-                        lang_mapping[lang]['speed']
-                    )
-                    if audio_file:
-                        # edge-tts로 생성된 파일은 play_audio로 재생
-                        play_audio(audio_file)
-                        if _ < repeat - 1:
-                            await asyncio.sleep(settings['spacing'])
-                    elif lang == 'vietnamese':
-                        # 베트남어는 get_voice_file에서 HTML/JS로 바로 재생되므로,
-                        # 여기서는 아무것도 하지 않음
-                        duration = len(lang_mapping[lang]['text']) * 0.1  # 대략적인 시간
-                        await asyncio.sleep(duration)
-                        if _ < repeat - 1:
-                            await asyncio.sleep(settings['spacing'])
-
-                    else:
-                        if _ < repeat - 1:
-                            await asyncio.sleep(settings['spacing'])
-
-            # 다음 문장으로 넘어가기 전 대기
-            await asyncio.sleep(settings['next_sentence_time'])
-
-            # 브레이크 체크
-            sentence_count += 1
-            if settings['break_enabled'] and sentence_count % settings['break_interval'] == 0:
-                try:
-                    status.warning(f"🔄 {settings['break_interval']}문장 완료! {settings['break_duration']}초간 휴식...")
-                    
-                    # 1. 먼저 break.wav 알림음 재생
-                    break_sound_path = SCRIPT_DIR / 'base/break.wav'
-                    if break_sound_path.exists():
-                        play_audio(str(break_sound_path))
-                        await asyncio.sleep(1)  # 알림음이 완전히 재생될 때까지 대기
-                    
-                    # 2. 브레이크 음성 메시지 생성 및 재생
-                    break_msg = "쉬어가는 시간입니다, 5초간의 호흡을 느껴보세요"
-                    break_audio = await get_voice_file(break_msg, VOICE_MAPPING['korean']['선희'], 1.0)
-                    if break_audio:
-                        play_audio(break_audio)
-                        # 음성 메시지 재생 시간 계산 (대략적으로 메시지 길이에 따라)
-                        await asyncio.sleep(3)  # 메시지가 재생될 때까지 대기
-                    
-                    # 3. 남은 휴식 시간 대기
-                    remaining_time = max(0, settings['break_duration'] - 4)  # 알림음과 메시지 재생 시간을 고려
-                    if remaining_time > 0:
-                        await asyncio.sleep(remaining_time)
-                    
-                    status.empty()
-                    
-                except Exception as e:
-                    st.error(f"브레이크 처리 중 오류: {e}")
-                    traceback.print_exc()
-
-        # 학습 완료 시
-        try:
-            # 마지막 시간 업데이트
-            current_time = time.time()
-            time_diff = current_time - st.session_state.last_update_time
-            if time_diff >= 60:
-                minutes_to_add = int(time_diff / 60)
-                st.session_state.today_total_study_time += minutes_to_add
-                st.session_state.last_update_time = current_time
-                # 학습 시간 저장
-                save_study_time()
-            
-            # final.wav 재생
-            final_sound_path = SCRIPT_DIR / 'base/final.wav'
-            if final_sound_path.exists():
-                play_audio(str(final_sound_path))
-                await asyncio.sleep(1)
-            
-            if settings['auto_repeat']:
-                repeat_count += 1
-                if repeat_count < settings['repeat_count']:
-                    # 반복 횟수가 남았으면 처음부터 다시 시작
-                    sentence_count = 0
-                    status.info(f"반복 중... ({repeat_count}/{settings['repeat_count']})")
-                    continue
-                else:
-                    # 반복 횟수를 모두 채우면 학습 종료
-                    st.success(f"학습이 완료되었습니다! (총 {settings['repeat_count']}회 반복)")
-                    st.session_state.page = 'settings'
-                    st.rerun()
-                    break
-                
-        except Exception as e:
-            st.error(f"완료 알림음 재생 오류: {e}")
-            traceback.print_exc()
+def get_column_data(df, column_name, start_idx, end_idx):
+    """안전하게 열 데이터를 가져오는 헬퍼 함수"""
+    try:
+        if column_name in df.columns:
+            return df.iloc[start_idx:end_idx+1, df.columns.get_loc(column_name)].tolist()
+        else:
+            return [""] * (end_idx - start_idx + 1)  # 열이 없으면 빈 문자열로 채우기
+    except Exception as e:
+        st.warning(f"{column_name} 열 읽기 실패: {str(e)}")
+        return [""] * (end_idx - start_idx + 1)  # 에러 발생 시 빈 문자열로 채우기
 
 def create_personalized_ui():
     """개인별 맞춤 UI 생성"""
@@ -1132,6 +1199,7 @@ def create_personalized_ui():
         options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
         index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(st.session_state.user_language)
     )
+    
     # 선택한 언어를 세션 상태에 저장
     if selected_language != st.session_state.user_language:
         st.session_state.user_language = selected_language
