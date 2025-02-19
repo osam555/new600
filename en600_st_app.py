@@ -220,7 +220,6 @@ def initialize_session_state():
         'japanese_speed': 2.0,  # 일본어 배속 기본값 추가
         'vietnamese_font': 'Arial',  # 베트남어 폰트 기본값 추가
         'vietnamese_font_size': 30,
-        'vietnamese_speed': 1.0,
         'first_font_size': 32,
         'second_font_size': 32,
         'third_font_size': 32,
@@ -472,11 +471,11 @@ def create_settings_ui(return_to_learning=False):
                     key="sheet_select"
                 )
                 
-                # 선택된 시트 데이터 읽기 - header=0으로 변경하여 첫 행을 헤더로 사용
+                # 선택된 시트 데이터 읽기 - header=None으로 변경하여 첫 행을 헤더로 사용
                 df = pd.read_excel(
                     EXCEL_PATH,
                     sheet_name=selected_sheet,
-                    header=0,  # 첫 행을 헤더로 사용
+                    header=None,  # 첫 행을 헤더로 사용
                     engine='openpyxl'
                 )
                 max_row = len(df)
@@ -563,11 +562,10 @@ def create_settings_ui(return_to_learning=False):
         st.subheader("자막 | 음성 | 속도")
         col1, col2, col3 = st.columns(3)
         
-        # 모든 지원 언어 리스트
+        # 기본 지원 언어 리스트 수정
         supported_languages = [
-            'korean', 'english', 'chinese', 'japanese', 'vietnamese', 'filipino',
-            'thai', 'russian', 'uzbek', 'mongolian', 'nepali', 'burmese', 
-            'indonesian', 'khmer'
+            'korean', 'english', 'chinese', 'japanese', 'vietnamese', 
+            'thai', 'uzbek'  # 필리핀어 대신 태국어와 우즈벡어 추가
         ]
         
         with col1:
@@ -959,30 +957,34 @@ async def start_learning():
         df = pd.read_excel(
             EXCEL_PATH,
             sheet_name=settings.get('selected_sheet', 0),
-            header=0,
+            header=0,  # 첫 행을 헤더로 사용
             engine='openpyxl'
         )
+
         start_idx = settings['start_row'] - 1
         end_idx = settings['end_row'] - 1
 
+        # 열 이름 매핑 (실제 엑셀 헤더에 맞춤)
+        column_mapping = {
+            'english': 'en-미국',     # A열
+            'korean': 'ko-한국',      # B열
+            'chinese': 'zh-중국',     # C열
+            'japanese': 'ja-일본',    # D열
+            'vietnamese': 'vi-베트남', # E열
+            'thai': 'th-태국',        # F열
+            'russian': 'ru-러시아',   # H열
+            'uzbek': 'uz-우즈벡'      # I열
+        }
+
         # 기본 언어 데이터 읽기
-        english = df.iloc[start_idx:end_idx+1, df.columns.get_loc('en-미국')].tolist()
-        korean = df.iloc[start_idx:end_idx+1, df.columns.get_loc('ko-한국')].tolist()
-        chinese = df.iloc[start_idx:end_idx+1, df.columns.get_loc('zh-중국')].tolist()
-        japanese = df.iloc[start_idx:end_idx+1, df.columns.get_loc('ja-일본')].tolist()
-        vietnamese = []
-        filipino = []
-
-        # 베트남어와 필리핀어는 있는 경우만 읽기
-        if 'vi-베트남' in df.columns:
-            vietnamese = df.iloc[start_idx:end_idx+1, df.columns.get_loc('vi-베트남')].tolist()
-        else:
-            vietnamese = [""] * (end_idx - start_idx + 1)
-
-        if 'tl-필리핀' in df.columns:
-            filipino = df.iloc[start_idx:end_idx+1, df.columns.get_loc('tl-필리핀')].tolist()
-        else:
-            filipino = [""] * (end_idx - start_idx + 1)
+        english = df[column_mapping['english']].iloc[start_idx:end_idx+1].tolist()
+        korean = df[column_mapping['korean']].iloc[start_idx:end_idx+1].tolist()
+        chinese = df[column_mapping['chinese']].iloc[start_idx:end_idx+1].tolist()
+        japanese = df[column_mapping['japanese']].iloc[start_idx:end_idx+1].tolist()
+        vietnamese = df[column_mapping['vietnamese']].iloc[start_idx:end_idx+1].tolist()
+        thai = df[column_mapping['thai']].iloc[start_idx:end_idx+1].tolist()
+        russian = df[column_mapping['russian']].iloc[start_idx:end_idx+1].tolist()
+        uzbek = df[column_mapping['uzbek']].iloc[start_idx:end_idx+1].tolist()
 
         total_sentences = len(english)
 
@@ -990,15 +992,18 @@ async def start_learning():
         progress, status, subtitles, speed_info = create_learning_ui()
 
         while True:
-            for i, (eng, kor, chn, jpn, vn, fil) in enumerate(zip(english, korean, chinese, japanese, vietnamese, filipino)):
-                # 기본 언어 매핑
+            for i, (eng, kor, chn, jpn, vn, th, ru, uz) in enumerate(zip(
+                english, korean, chinese, japanese, vietnamese, thai, russian, uzbek)):
+                # 언어 매핑 수정
                 lang_mapping = {
                     'korean': {'text': kor, 'voice': get_voice_mapping('korean', settings.get('kor_voice')), 'speed': settings.get('korean_speed', 1.2)},
                     'english': {'text': eng, 'voice': get_voice_mapping('english', settings.get('eng_voice')), 'speed': settings.get('english_speed', 1.2)},
                     'chinese': {'text': chn, 'voice': get_voice_mapping('chinese', settings.get('zh_voice')), 'speed': settings.get('chinese_speed', 1.2)},
                     'japanese': {'text': jpn, 'voice': get_voice_mapping('japanese', settings.get('jp_voice')), 'speed': settings.get('japanese_speed', 1.2)},
                     'vietnamese': {'text': vn, 'voice': get_voice_mapping('vietnamese', settings.get('vi_voice')), 'speed': settings.get('vietnamese_speed', 1.2)},
-                    'filipino': {'text': fil, 'voice': get_voice_mapping('filipino', settings.get('fil_voice')), 'speed': settings.get('filipino_speed', 1.2)}
+                    'thai': {'text': th, 'voice': get_voice_mapping('thai', settings.get('thai_voice')), 'speed': settings.get('thai_speed', 1.2)},
+                    'russian': {'text': ru, 'voice': get_voice_mapping('russian', settings.get('russian_voice')), 'speed': settings.get('russian_speed', 1.2)},
+                    'uzbek': {'text': uz, 'voice': get_voice_mapping('uzbek', settings.get('uzbek_voice')), 'speed': settings.get('uzbek_speed', 1.2)}
                 }
 
                 progress.progress((i + 1) / total_sentences)
