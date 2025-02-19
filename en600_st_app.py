@@ -835,35 +835,102 @@ def initialize_pygame_mixer():
                 return False
     return True
 
-def play_audio(file_path):
-    """음성 파일 재생 함수"""
+def play_audio(file_path, sentence_interval=1.0, next_sentence=False):
+    """
+    음성 파일 재생 - 문장 간격 및 다음 문장 설정 적용
+    """
     try:
-        # 파일 존재 확인
-        if not os.path.exists(file_path):
-            st.warning(f"음성 파일을 찾을 수 없습니다: {file_path}")
+        if not file_path or not os.path.exists(file_path):
+            st.error(f"파일 경로 오류: {file_path}")
             return
 
-        # 오디오 바이트로 읽기
-        with open(file_path, 'rb') as f:
-            audio_bytes = f.read()
-        
-        # 스트림릿의 audio 컴포넌트로 재생
-        st.audio(audio_bytes, format='audio/wav')
-        
-        # 재생 시간 계산 및 대기
+        # WAV 파일에서 실제 재생 시간 계산
         try:
             with wave.open(file_path, 'rb') as wav_file:
                 frames = wav_file.getnframes()
                 rate = wav_file.getframerate()
                 duration = frames / float(rate)
-                time.sleep(duration)
         except Exception:
-            # wave 파일 읽기 실패 시 기본 대기 시간 사용
-            time.sleep(2)
+            with open(file_path, 'rb') as f:
+                audio_bytes = f.read()
+            duration = len(audio_bytes) / 32000
+
+        # 파일을 바이트로 읽기
+        with open(file_path, 'rb') as f:
+            audio_bytes = f.read()
+        audio_base64 = base64.b64encode(audio_bytes).decode()
+
+        # 고유한 ID 생성
+        audio_id = f"audio_{int(time.time() * 1000)}"
+        
+        # HTML 오디오 요소 생성
+        st.markdown(f"""
+            <audio id="{audio_id}" autoplay="true">
+                <source src="data:audio/wav;base64,{audio_base64}" type="audio/wav">
+            </audio>
+            <script>
+                (function() {{
+                    const audio = document.getElementById("{audio_id}");
+                    
+                    // 이전 오디오가 있으면 정지
+                    if (window.currentAudio && window.currentAudio !== audio) {{
+                        window.currentAudio.pause();
+                        window.currentAudio.currentTime = 0;
+                        window.currentAudio.remove();
+                    }}
+                    
+                    // 현재 오디오를 전역 변수에 저장
+                    window.currentAudio = audio;
+                    window.audioEnded = false;
+                    
+                    // 재생 완료 이벤트
+                    audio.onended = function() {{
+                        window.audioEnded = true;
+                        if (window.currentAudio === audio) {{
+                            window.currentAudio = null;
+                        }}
+                        audio.remove();
+                    }};
+
+                    // 재생 시작 이벤트
+                    audio.onplay = function() {{
+                        window.audioEnded = false;
+                    }};
+                }})();
+            </script>
+        """, unsafe_allow_html=True)
+
+        # 대기 시간 계산
+        if next_sentence:
+            # 다음 문장으로 빠르게 넘어가기
+            wait_time = duration + 0.3  # 최소 대기 시간
+        else:
+            # 문장 간격 적용
+            base_wait = duration
+            
+            # 긴 문장에 대한 추가 대기 시간
+            if duration > 5:
+                extra_wait = duration * 0.1  # 10% 추가
+            else:
+                extra_wait = 0.5
+                
+            # 사용자가 설정한 문장 간격 적용
+            wait_time = base_wait + extra_wait + sentence_interval
+
+        # 최소 대기 시간 보장
+        wait_time = max(wait_time, duration + 0.3)
+        
+        time.sleep(wait_time)
 
     except Exception as e:
-        st.warning(f"음성 재생 실패: {str(e)}")
-        time.sleep(1)
+        st.error(f"음성 재생 오류: {str(e)}")
+    finally:
+        # 임시 파일 삭제
+        try:
+            if file_path and TEMP_DIR in Path(file_path).parents:
+                os.remove(file_path)
+        except Exception:
+            pass
 
 async def get_voice_file(text, voice, speed=1.0, output_file=None):
     """음성 파일 생성 함수 개선"""
@@ -1127,9 +1194,7 @@ async def start_learning():
                                     lang_mapping[lang]['speed']
                                 )
                                 if audio_file:
-                                    play_audio(audio_file)
-                                    if _ < repeat - 1:
-                                        await asyncio.sleep(settings['spacing'])
+                                    play_audio(audio_file, settings['spacing'], False)
                             except Exception as e:
                                 st.warning(f"{LANG_DISPLAY[lang]} 음성 재생 불가: {str(e)}")
                                 await asyncio.sleep(1)  # 에러 시 1초 대기
@@ -1147,16 +1212,13 @@ async def start_learning():
                         # 1. 먼저 break.wav 알림음 재생
                         break_sound_path = SCRIPT_DIR / 'base/break.wav'
                         if break_sound_path.exists():
-                            play_audio(str(break_sound_path))
-                            await asyncio.sleep(1)  # 알림음이 완전히 재생될 때까지 대기
+                            play_audio(str(break_sound_path), 0, True)
                         
                         # 2. 브레이크 음성 메시지 생성 및 재생
                         break_msg = "쉬어가는 시간입니다, 5초간의 호흡을 느껴보세요"
                         break_audio = await get_voice_file(break_msg, VOICE_MAPPING['korean']['선희'], 1.0)
                         if break_audio:
-                            play_audio(break_audio)
-                            # 음성 메시지 재생 시간 계산 (대략적으로 메시지 길이에 따라)
-                            await asyncio.sleep(3)  # 메시지가 재생될 때까지 대기
+                            play_audio(break_audio, 0, True)
                         
                         # 3. 남은 휴식 시간 대기
                         remaining_time = max(0, settings['break_duration'] - 4)  # 알림음과 메시지 재생 시간을 고려
@@ -1184,8 +1246,7 @@ async def start_learning():
                 # final.wav 재생
                 final_sound_path = SCRIPT_DIR / 'base/final.wav'
                 if final_sound_path.exists():
-                    play_audio(str(final_sound_path))
-                    await asyncio.sleep(1)
+                    play_audio(str(final_sound_path), 0, True)
                 
                 if settings['auto_repeat']:
                     repeat_count += 1
