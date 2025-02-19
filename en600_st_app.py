@@ -21,7 +21,7 @@ import psutil
 import gc
 import hashlib
 
-## streamlit run en600st/en600_st_appcopy5.py
+## streamlit run en600st/en600_st_app.py
 
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -380,7 +380,12 @@ def create_settings_ui(return_to_learning=False):
         settings = st.session_state.settings
         col1, col2 = st.columns([0.7, 0.3])
         with col1:
-            st.markdown('<h1 style="font-size: 2rem; color: #FF0000;">▶️ 도파민 대충영어 🇰🇷 한국어</h1>', unsafe_allow_html=True)
+            st.markdown("""
+                <h1 style="font-size: 2rem; color: #FF0000; line-height: 1.2;">
+                    머리가 좋아지는🎧<br>
+                    도파민 대충영어🇰🇷
+                </h1>
+            """, unsafe_allow_html=True)
         with col2:
             # 엑셀 파일에서 시트 선택 및 최대 행 수 가져오기
             try:
