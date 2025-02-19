@@ -1,7 +1,8 @@
-edge-tts==6.1.9
 streamlit==1.31.0
 pandas==2.0.3
-numpy==1.24.3
-librosa==0.10.1
+edge-tts==6.1.9
+pygame==2.5.2
 soundfile==0.12.1
+librosa==0.10.1
 psutil==5.9.8
+pydub==0.25.1 
