@@ -6,4 +6,5 @@ portaudio19-dev
 python3-pyaudio
 libsndfile1
 python3-soundfile
-alsa-utils 
+alsa-utils
+pulseaudio 
