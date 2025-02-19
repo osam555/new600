@@ -23,6 +23,8 @@ import psutil
 import gc
 import hashlib
 
+## streamlit run en600st/en600_st_app.py
+
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
 SETTINGS_PATH = SCRIPT_DIR / 'base/en600s-settings.json'
@@ -261,7 +263,10 @@ def initialize_session_state():
         'nepali_font_size': 32,
         'burmese_font_size': 32,
         'indonesian_font_size': 32,
-        'khmer_font_size': 32
+        'khmer_font_size': 32,
+        'audio_playback_method': 'html5',  # 'html5' 또는 'streamlit'
+        'audio_wait_mode': 'duration',     # 'duration' 또는 'fixed'
+        'fixed_wait_time': 2.0,            # 고정 대기 시간 (초)
     }
     
     # 설정이 없는 경우 기본값으로 초기화
@@ -565,7 +570,7 @@ def create_settings_ui(return_to_learning=False):
         # 기본 지원 언어 리스트 수정
         supported_languages = [
             'korean', 'english', 'chinese', 'japanese', 'vietnamese', 
-            'thai', 'uzbek'  # 필리핀어 대신 태국어와 우즈벡어 추가
+            'thai', 'russian', 'uzbek', 'indonesian'  # 인도네시아어 추가
         ]
         
         with col1:
@@ -657,6 +662,36 @@ def create_settings_ui(return_to_learning=False):
             save_settings(settings)
             st.session_state.page = 'learning'
             st.rerun()
+
+        # 음성 재생 설정 섹션 추가
+        st.subheader("음성 재생 설정")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            settings['audio_playback_method'] = st.selectbox(
+                "재생 방식",
+                options=['html5', 'streamlit'],
+                format_func=lambda x: 'HTML5 Audio' if x == 'html5' else 'Streamlit Audio',
+                key='audio_method'
+            )
+        
+        with col2:
+            settings['audio_wait_mode'] = st.selectbox(
+                "대기 시간 방식",
+                options=['duration', 'fixed'],
+                format_func=lambda x: '자동 계산' if x == 'duration' else '고정 시간',
+                key='wait_mode'
+            )
+            
+            if settings['audio_wait_mode'] == 'fixed':
+                settings['fixed_wait_time'] = st.number_input(
+                    "고정 대기 시간(초)",
+                    min_value=0.5,
+                    max_value=5.0,
+                    value=settings.get('fixed_wait_time', 2.0),
+                    step=0.1,
+                    key='fixed_wait'
+                )
 
         # 문장 재생 설정
         st.subheader("문장 재생")
@@ -837,12 +872,16 @@ def initialize_pygame_mixer():
 
 def play_audio(file_path, sentence_interval=1.0, next_sentence=False):
     """
-    음성 파일 재생 - 문장 간격 및 다음 문장 설정 적용
+    음성 파일 재생 - 저장된 설정에 따라 재생 방식 선택
     """
     try:
         if not file_path or not os.path.exists(file_path):
             st.error(f"파일 경로 오류: {file_path}")
             return
+
+        settings = st.session_state.settings
+        playback_method = settings.get('audio_playback_method', 'html5')
+        wait_mode = settings.get('audio_wait_mode', 'duration')
 
         # WAV 파일에서 실제 재생 시간 계산
         try:
@@ -855,77 +894,64 @@ def play_audio(file_path, sentence_interval=1.0, next_sentence=False):
                 audio_bytes = f.read()
             duration = len(audio_bytes) / 32000
 
-        # 파일을 바이트로 읽기
-        with open(file_path, 'rb') as f:
-            audio_bytes = f.read()
-        audio_base64 = base64.b64encode(audio_bytes).decode()
+        if playback_method == 'html5':
+            # HTML5 Audio 방식
+            with open(file_path, 'rb') as f:
+                audio_bytes = f.read()
+            audio_base64 = base64.b64encode(audio_bytes).decode()
 
-        # 고유한 ID 생성
-        audio_id = f"audio_{int(time.time() * 1000)}"
-        
-        # HTML 오디오 요소 생성
-        st.markdown(f"""
-            <audio id="{audio_id}" autoplay="true">
-                <source src="data:audio/wav;base64,{audio_base64}" type="audio/wav">
-            </audio>
-            <script>
-                (function() {{
-                    const audio = document.getElementById("{audio_id}");
-                    
-                    // 이전 오디오가 있으면 정지
-                    if (window.currentAudio && window.currentAudio !== audio) {{
-                        window.currentAudio.pause();
-                        window.currentAudio.currentTime = 0;
-                        window.currentAudio.remove();
-                    }}
-                    
-                    // 현재 오디오를 전역 변수에 저장
-                    window.currentAudio = audio;
-                    window.audioEnded = false;
-                    
-                    // 재생 완료 이벤트
-                    audio.onended = function() {{
-                        window.audioEnded = true;
-                        if (window.currentAudio === audio) {{
-                            window.currentAudio = null;
+            audio_id = f"audio_{int(time.time() * 1000)}"
+            
+            st.markdown(f"""
+                <audio id="{audio_id}" autoplay="true">
+                    <source src="data:audio/wav;base64,{audio_base64}" type="audio/wav">
+                </audio>
+                <script>
+                    (function() {{
+                        const audio = document.getElementById("{audio_id}");
+                        if (window.currentAudio && window.currentAudio !== audio) {{
+                            window.currentAudio.pause();
+                            window.currentAudio.currentTime = 0;
+                            window.currentAudio.remove();
                         }}
-                        audio.remove();
-                    }};
-
-                    // 재생 시작 이벤트
-                    audio.onplay = function() {{
+                        window.currentAudio = audio;
                         window.audioEnded = false;
-                    }};
-                }})();
-            </script>
-        """, unsafe_allow_html=True)
+                        audio.onended = function() {{
+                            window.audioEnded = true;
+                            if (window.currentAudio === audio) {{
+                                window.currentAudio = null;
+                            }}
+                            audio.remove();
+                        }};
+                        audio.onplay = function() {{
+                            window.audioEnded = false;
+                        }};
+                    }})();
+                </script>
+            """, unsafe_allow_html=True)
+        else:
+            # Streamlit Audio 방식
+            with open(file_path, 'rb') as f:
+                audio_bytes = f.read()
+            st.audio(audio_bytes, format='audio/wav')
 
         # 대기 시간 계산
-        if next_sentence:
-            # 다음 문장으로 빠르게 넘어가기
-            wait_time = duration + 0.3  # 최소 대기 시간
+        if wait_mode == 'fixed':
+            wait_time = settings.get('fixed_wait_time', 2.0)
         else:
-            # 문장 간격 적용
-            base_wait = duration
-            
-            # 긴 문장에 대한 추가 대기 시간
-            if duration > 5:
-                extra_wait = duration * 0.1  # 10% 추가
+            if next_sentence:
+                wait_time = duration + 0.3
             else:
-                extra_wait = 0.5
-                
-            # 사용자가 설정한 문장 간격 적용
-            wait_time = base_wait + extra_wait + sentence_interval
+                base_wait = duration
+                extra_wait = duration * 0.1 if duration > 5 else 0.5
+                wait_time = base_wait + extra_wait + sentence_interval
+                wait_time = max(wait_time, duration + 0.3)
 
-        # 최소 대기 시간 보장
-        wait_time = max(wait_time, duration + 0.3)
-        
         time.sleep(wait_time)
 
     except Exception as e:
         st.error(f"음성 재생 오류: {str(e)}")
     finally:
-        # 임시 파일 삭제
         try:
             if file_path and TEMP_DIR in Path(file_path).parents:
                 os.remove(file_path)
@@ -1045,7 +1071,8 @@ async def start_learning():
             'vietnamese': 'vi-베트남', # E열
             'thai': 'th-태국',        # F열
             'russian': 'ru-러시아',   # H열
-            'uzbek': 'uz-우즈벡'      # I열
+            'uzbek': 'uz-우즈벡',     # I열
+            'indonesian': 'id-인니'   # M열
         }
 
         # 기본 언어 데이터 읽기
@@ -1057,6 +1084,7 @@ async def start_learning():
         thai = df[column_mapping['thai']].iloc[start_idx:end_idx+1].tolist()
         russian = df[column_mapping['russian']].iloc[start_idx:end_idx+1].tolist()
         uzbek = df[column_mapping['uzbek']].iloc[start_idx:end_idx+1].tolist()
+        indonesian = df[column_mapping['indonesian']].iloc[start_idx:end_idx+1].tolist()
 
         total_sentences = len(english)
 
@@ -1064,8 +1092,8 @@ async def start_learning():
         progress, status, subtitles, speed_info = create_learning_ui()
 
         while True:
-            for i, (eng, kor, chn, jpn, vn, th, ru, uz) in enumerate(zip(
-                english, korean, chinese, japanese, vietnamese, thai, russian, uzbek)):
+            for i, (eng, kor, chn, jpn, vn, th, ru, uz, ind) in enumerate(zip(
+                english, korean, chinese, japanese, vietnamese, thai, russian, uzbek, indonesian)):
                 # 언어 매핑 수정
                 lang_mapping = {
                     'korean': {'text': kor, 'voice': get_voice_mapping('korean', settings.get('kor_voice')), 'speed': settings.get('korean_speed', 1.2)},
@@ -1075,7 +1103,8 @@ async def start_learning():
                     'vietnamese': {'text': vn, 'voice': get_voice_mapping('vietnamese', settings.get('vi_voice')), 'speed': settings.get('vietnamese_speed', 1.2)},
                     'thai': {'text': th, 'voice': get_voice_mapping('thai', settings.get('thai_voice')), 'speed': settings.get('thai_speed', 1.2)},
                     'russian': {'text': ru, 'voice': get_voice_mapping('russian', settings.get('russian_voice')), 'speed': settings.get('russian_speed', 1.2)},
-                    'uzbek': {'text': uz, 'voice': get_voice_mapping('uzbek', settings.get('uzbek_voice')), 'speed': settings.get('uzbek_speed', 1.2)}
+                    'uzbek': {'text': uz, 'voice': get_voice_mapping('uzbek', settings.get('uzbek_voice')), 'speed': settings.get('uzbek_speed', 1.2)},
+                    'indonesian': {'text': ind, 'voice': get_voice_mapping('indonesian', settings.get('indonesian_voice')), 'speed': settings.get('indonesian_speed', 1.2)}
                 }
 
                 progress.progress((i + 1) / total_sentences)
@@ -1300,12 +1329,11 @@ def create_personalized_ui():
     st.title("개인별 설정 기억하기")
 
     # 언어 선택
-    selected_language = st.selectbox(
-        "사용할 언어를 선택하세요",
-        options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
-        index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(st.session_state.user_language)
-    )
-    
+    selected_language = st.selectbox
+    "사용할 언어를 선택하세요",
+    options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
+    index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(st.session_state.user_language)
+        
     # 선택한 언어를 세션 상태에 저장
     if selected_language != st.session_state.user_language:
         st.session_state.user_language = selected_language
