@@ -20,8 +20,6 @@ from pydub import AudioSegment
 import io
 import librosa
 
-## ㅊ
-
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
 SETTINGS_PATH = SCRIPT_DIR / 'base/en600s-settings.json'
@@ -303,13 +301,11 @@ def create_settings_ui(return_to_learning=False):
         st.markdown("""
             <style>
                 /* 서브헤더 스타일 수정 */
-                section[tabindex="0"] h2,
-                section[data-testid="stSidebar"] h2,
-                .element-container h2,
                 .stMarkdown h2,
+                .streamlit-expanderHeader,
+                [data-testid="stSidebarNav"] h2,
                 div[data-testid="stMarkdownContainer"] h2,
-                .st-emotion-cache-1629p8f h2,
-                .st-emotion-cache-1y4p8pa {
+                .st-emotion-cache-1629p8f h2 {
                     font-size: 1.2rem !important;
                     color: #00FF00 !important;  /* 초록색으로 변경 */
                     border-bottom: 2px solid #00FF00 !important;  /* 초록색 밑줄 추가 */
