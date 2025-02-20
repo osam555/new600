@@ -480,7 +480,7 @@ def create_settings_ui(return_to_learning=False):
                 settings['repeat_count'] = int(settings['repeat_count'])
 
         # 언어 순위 설정
-        st.subheader("자막 | 음성 | 속도")
+        st.subheader("자막 • 음성 • 속도")
         col1, col2, col3 = st.columns(3)
         with col1:
             settings['first_lang'] = st.selectbox("1번째     언어",
@@ -621,7 +621,7 @@ def create_settings_ui(return_to_learning=False):
                                    key="third_hide")
 
         # 폰트 및 색상 설정 섹션
-        st.subheader("폰트 크기 | 색깔")
+        st.subheader("폰트 크기 • 색깔")
         col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
             settings['korean_font_size'] = st.number_input("한글",
