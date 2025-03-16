@@ -20,7 +20,7 @@ import psutil
 import gc
 import hashlib
 
-## streamlit run en600_st22.py
+## streamlit run en600_st23.py
 
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -161,6 +161,47 @@ def format_column_header(lang_code):
         return f"{lang_code}-{LANGUAGE_MAPPING[lang_code]['name']}"
     return lang_code
 
+def validate_excel_structure():
+    """엑셀 파일 구조 검증 및 필요시 수정"""
+    try:
+        # 엑셀 파일 존재 여부 확인
+        if not EXCEL_PATH.exists():
+            st.error(f"엑셀 파일을 찾을 수 없습니다: {EXCEL_PATH}")
+            return False
+            
+        # 엑셀 파일 읽기
+        excel_file = pd.ExcelFile(EXCEL_PATH)
+        sheet_names = excel_file.sheet_names
+        
+        if not sheet_names:
+            st.error("엑셀 파일에 시트가 없습니다.")
+            return False
+            
+        # 각 시트 검증
+        for sheet_name in sheet_names[:3]:  # 처음 3개 시트만 검증
+            try:
+                df = pd.read_excel(EXCEL_PATH, sheet_name=sheet_name, header=0, engine='openpyxl')
+                
+                # 열 이름 확인
+                columns = df.columns.tolist()
+                
+                # 필수 열 확인 (영어, 한국어)
+                en_col_exists = any('en' in str(col).lower() or '영어' in str(col) or '미국' in str(col) for col in columns)
+                ko_col_exists = any('ko' in str(col).lower() or '한국' in str(col) or '한글' in str(col) for col in columns)
+                
+                if not en_col_exists or not ko_col_exists:
+                    print(f"시트 '{sheet_name}'에 필수 열(영어, 한국어)이 없습니다.")
+                
+            except Exception as e:
+                print(f"시트 '{sheet_name}' 검증 중 오류 발생: {str(e)}")
+                continue
+                
+        return True
+        
+    except Exception as e:
+        st.error(f"엑셀 파일 검증 중 오류 발생: {str(e)}")
+        return False
+
 def initialize_session_state():
     """세션 상태 초기화 함수"""
     # 페이지 상태 초기화
@@ -190,6 +231,15 @@ def initialize_session_state():
         'zh_voice': '샤오샤오',
         'jp_voice': 'Nanami',
         'vi_voice': 'HoaiMy',
+        'filipino_voice': 'James',
+        'thai_voice': 'Niwat',
+        'russian_voice': 'Dmitry',
+        'uzbek_voice': 'Sardor',
+        'mongolian_voice': 'Bataa',
+        'nepali_voice': 'Hemkala',
+        'burmese_voice': 'Thura',
+        'indonesian_voice': 'Ardi',
+        'khmer_voice': 'Piseth',
         
         # 학습 범위 설정
         'start_row': 1,  # 시작 행
@@ -265,6 +315,9 @@ def initialize_session_state():
     # temp 폴더가 없으면 생성
     if not TEMP_DIR.exists():
         TEMP_DIR.mkdir(parents=True)
+    
+    # 엑셀 파일 구조 검증
+    validate_excel_structure()
     
     # break.wav 파일 존재 여부 확인
     break_sound_path = SCRIPT_DIR / './base/break.wav'
@@ -400,13 +453,26 @@ def create_settings_ui(return_to_learning=False):
                     key="sheet_select"
                 )
                 
-                # 선택된 시트 데이터 읽기 - header=None으로 변경하여 첫 행을 헤더로 사용
-                df = pd.read_excel(
-                    EXCEL_PATH,
-                    sheet_name=selected_sheet,
-                    header=None,  # 첫 행을 헤더로 사용
-                    engine='openpyxl'
-                )
+                # 선택된 시트 데이터 읽기
+                try:
+                    # 먼저 헤더가 있는 형식으로 시도
+                    df = pd.read_excel(
+                        EXCEL_PATH,
+                        sheet_name=selected_sheet,
+                        header=0,
+                        engine='openpyxl'
+                    )
+                except Exception:
+                    # 실패하면 헤더 없이 시도
+                    df = pd.read_excel(
+                        EXCEL_PATH,
+                        sheet_name=selected_sheet,
+                        header=None,
+                        engine='openpyxl'
+                    )
+                    # 첫 번째 행을 헤더로 설정
+                    df.columns = [f"Column_{i}" for i in range(len(df.columns))]
+                
                 max_row = len(df)
                 
                 # 선택된 시트 정보를 설정에 저장
@@ -494,7 +560,8 @@ def create_settings_ui(return_to_learning=False):
         # 기본 지원 언어 리스트 수정
         supported_languages = [
             'korean', 'english', 'chinese', 'japanese', 'vietnamese', 
-            'thai', 'russian', 'uzbek', 'indonesian'  # 인도네시아어 추가
+            'filipino', 'thai', 'russian', 'uzbek', 'mongolian', 
+            'nepali', 'burmese', 'indonesian', 'khmer'  # 모든 언어 추가
         ]
         
         with col1:
@@ -504,7 +571,7 @@ def create_settings_ui(return_to_learning=False):
                 format_func=lambda x: LANG_DISPLAY[x],
                 key="settings_first_lang")
             # 음성 재생 횟수를 선택박스로 변경
-            current_repeat = max(1, min(settings.get('first_repeat', 1), 5))  # 1-5 사이로 제한
+            current_repeat = max(1, min(settings.get('first_repeat', 1), 5))
             settings['first_repeat'] = st.selectbox("음성 재생(횟수)",
                                       options=list(range(0, 3)),  # 0-2회
                                       index=current_repeat-1,  # 0-based index
@@ -513,7 +580,7 @@ def create_settings_ui(return_to_learning=False):
             # 음성 속도와 모델 선택 추가
             if settings['first_lang'] in VOICE_MAPPING:
                 speed_options = [round(x * 0.2, 1) for x in range(4, 31)]  # 0.8-6.0배, 0.2간격
-                speed_key = f"first_speed"  # Changed from language-specific to rank-specific
+                speed_key = "first_speed"  # Changed from language-specific to rank-specific
                 current_speed = round(float(settings.get(speed_key, 1.2)), 1)
                 current_speed = max(0.8, min(current_speed, 6.0 if settings['first_lang'] == 'korean' else 4.0))
                 try:
@@ -529,9 +596,19 @@ def create_settings_ui(return_to_learning=False):
                 voice_options = list(VOICE_MAPPING[settings['first_lang']].keys())
                 default_voice = next(iter(VOICE_MAPPING[settings['first_lang']].keys()))
                 voice_key = "first_voice"  # Changed from language-specific to rank-specific
+                
+                # 안전하게 음성 모델 인덱스 찾기
+                current_voice = settings.get(voice_key, default_voice)
+                try:
+                    voice_index = voice_options.index(current_voice)
+                except ValueError:
+                    # 현재 음성이 목록에 없으면 기본값 사용
+                    voice_index = 0
+                    settings[voice_key] = default_voice
+                
                 selected_voice = st.selectbox("음성 모델",
                                             options=voice_options,
-                                            index=voice_options.index(settings.get(voice_key, default_voice)),
+                                            index=voice_index,
                                             key=f"first_voice_top")
                 settings[voice_key] = selected_voice
 
@@ -551,7 +628,7 @@ def create_settings_ui(return_to_learning=False):
             # 음성 속도와 모델 선택 추가
             if settings['second_lang'] in VOICE_MAPPING:
                 speed_options = [round(x * 0.2, 1) for x in range(4, 31)]
-                speed_key = f"second_speed"  # Changed from language-specific to rank-specific
+                speed_key = "second_speed"  # Changed from language-specific to rank-specific
                 current_speed = round(float(settings.get(speed_key, 1.2)), 1)
                 current_speed = max(0.8, min(current_speed, 6.0 if settings['second_lang'] == 'korean' else 4.0))
                 try:
@@ -567,9 +644,19 @@ def create_settings_ui(return_to_learning=False):
                 voice_options = list(VOICE_MAPPING[settings['second_lang']].keys())
                 default_voice = next(iter(VOICE_MAPPING[settings['second_lang']].keys()))
                 voice_key = "second_voice"  # Changed from language-specific to rank-specific
+                
+                # 안전하게 음성 모델 인덱스 찾기
+                current_voice = settings.get(voice_key, default_voice)
+                try:
+                    voice_index = voice_options.index(current_voice)
+                except ValueError:
+                    # 현재 음성이 목록에 없으면 기본값 사용
+                    voice_index = 0
+                    settings[voice_key] = default_voice
+                
                 selected_voice = st.selectbox("음성 모델",
                                             options=voice_options,
-                                            index=voice_options.index(settings.get(voice_key, default_voice)),
+                                            index=voice_index,
                                             key=f"second_voice_top")
                 settings[voice_key] = selected_voice
 
@@ -585,7 +672,7 @@ def create_settings_ui(return_to_learning=False):
             # 'none'이 아닐 때만 음성 재생 횟수와 속도 설정 표시
             if settings['third_lang'] != 'none':
                 # 음성 재생 횟수를 선택박스로 변경
-                current_repeat = max(1, min(settings.get('third_repeat', 1), 5))  # 1-5 사이로 제한
+                current_repeat = max(1, min(settings.get('third_repeat', 1), 5))
                 settings['third_repeat'] = st.selectbox("음성 재생(횟수)",
                                           options=list(range(1, 3)),  # 1-2회
                                           index=current_repeat-1,  # 0-based index
@@ -594,7 +681,7 @@ def create_settings_ui(return_to_learning=False):
                 # 음성 속도와 모델 선택 추가
                 if settings['third_lang'] in VOICE_MAPPING:
                     speed_options = [round(x * 0.2, 1) for x in range(4, 31)]
-                    speed_key = f"third_speed"  # Changed from language-specific to rank-specific
+                    speed_key = "third_speed"  # Changed from language-specific to rank-specific
                     current_speed = round(float(settings.get(speed_key, 1.2)), 1)
                     current_speed = max(0.8, min(current_speed, 6.0 if settings['third_lang'] == 'korean' else 4.0))
                     try:
@@ -610,9 +697,19 @@ def create_settings_ui(return_to_learning=False):
                     voice_options = list(VOICE_MAPPING[settings['third_lang']].keys())
                     default_voice = next(iter(VOICE_MAPPING[settings['third_lang']].keys()))
                     voice_key = "third_voice"  # Changed from language-specific to rank-specific
+                    
+                    # 안전하게 음성 모델 인덱스 찾기
+                    current_voice = settings.get(voice_key, default_voice)
+                    try:
+                        voice_index = voice_options.index(current_voice)
+                    except ValueError:
+                        # 현재 음성이 목록에 없으면 기본값 사용
+                        voice_index = 0
+                        settings[voice_key] = default_voice
+                    
                     selected_voice = st.selectbox("음성 모델",
                                                 options=voice_options,
-                                                index=voice_options.index(settings.get(voice_key, default_voice)),
+                                                index=voice_index,
                                                 key=f"third_voice_top")
                     settings[voice_key] = selected_voice
             else:
@@ -790,6 +887,10 @@ def create_settings_ui(return_to_learning=False):
 def get_voice_mapping(language, voice_setting):
     """안전하게 음성 매핑을 가져오는 함수"""
     try:
+        # 네팔어 특별 처리
+        if language == 'nepali':
+            return "ne-NP-HemkalaNeural"  # 네팔어 기본 음성 직접 반환
+            
         # 기본값 설정
         default_voices = {
             'korean': '선희',
@@ -821,11 +922,11 @@ def get_voice_mapping(language, voice_setting):
             if default_voice and language in VOICE_MAPPING and default_voice in VOICE_MAPPING[language]:
                 return VOICE_MAPPING[language][default_voice]
             else:
-                st.error(f"음성 매핑을 찾을 수 없습니다 ({language})")
+                # 오류 대신 None 반환 (자막만 표시하기 위함)
                 return None
             
     except Exception as e:
-        st.error(f"음성 매핑 오류 ({language}): {str(e)}")
+        # 오류 발생 시 None 반환 (자막만 표시하기 위함)
         return None
 
 def initialize_pygame_mixer():
@@ -853,7 +954,7 @@ def play_audio(file_path, sentence_interval=1.0, next_sentence=False):
     """
     try:
         if not file_path or not os.path.exists(file_path):
-            st.error(f"파일 경로 오류: {file_path}")
+            # 파일이 없는 경우 조용히 리턴
             return
 
         settings = st.session_state.settings
@@ -867,50 +968,62 @@ def play_audio(file_path, sentence_interval=1.0, next_sentence=False):
                 rate = wav_file.getframerate()
                 duration = frames / float(rate)
         except Exception:
-            with open(file_path, 'rb') as f:
-                audio_bytes = f.read()
-            duration = len(audio_bytes) / 32000
+            try:
+                with open(file_path, 'rb') as f:
+                    audio_bytes = f.read()
+                duration = len(audio_bytes) / 32000
+            except Exception:
+                # 파일 읽기 실패 시 기본값 사용
+                duration = 2.0
 
         if playback_method == 'html5':
             # HTML5 Audio 방식
-            with open(file_path, 'rb') as f:
-                audio_bytes = f.read()
-            audio_base64 = base64.b64encode(audio_bytes).decode()
+            try:
+                with open(file_path, 'rb') as f:
+                    audio_bytes = f.read()
+                audio_base64 = base64.b64encode(audio_bytes).decode()
 
-            audio_id = f"audio_{int(time.time() * 1000)}"
-            
-            st.markdown(f"""
-                <audio id="{audio_id}" autoplay="true">
-                    <source src="data:audio/wav;base64,{audio_base64}" type="audio/wav">
-                </audio>
-                <script>
-                    (function() {{
-                        const audio = document.getElementById("{audio_id}");
-                        if (window.currentAudio && window.currentAudio !== audio) {{
-                            window.currentAudio.pause();
-                            window.currentAudio.currentTime = 0;
-                            window.currentAudio.remove();
-                        }}
-                        window.currentAudio = audio;
-                        window.audioEnded = false;
-                        audio.onended = function() {{
-                            window.audioEnded = true;
-                            if (window.currentAudio === audio) {{
-                                window.currentAudio = null;
+                audio_id = f"audio_{int(time.time() * 1000)}"
+                
+                st.markdown(f"""
+                    <audio id="{audio_id}" autoplay="true">
+                        <source src="data:audio/wav;base64,{audio_base64}" type="audio/wav">
+                    </audio>
+                    <script>
+                        (function() {{
+                            const audio = document.getElementById("{audio_id}");
+                            if (window.currentAudio && window.currentAudio !== audio) {{
+                                window.currentAudio.pause();
+                                window.currentAudio.currentTime = 0;
+                                window.currentAudio.remove();
                             }}
-                            audio.remove();
-                        }};
-                        audio.onplay = function() {{
+                            window.currentAudio = audio;
                             window.audioEnded = false;
-                        }};
-                    }})();
-                </script>
-            """, unsafe_allow_html=True)
+                            audio.onended = function() {{
+                                window.audioEnded = true;
+                                if (window.currentAudio === audio) {{
+                                    window.currentAudio = null;
+                                }}
+                                audio.remove();
+                            }};
+                            audio.onplay = function() {{
+                                window.audioEnded = false;
+                            }};
+                        }})();
+                    </script>
+                """, unsafe_allow_html=True)
+            except Exception:
+                # 오디오 재생 실패 시 조용히 넘어감
+                pass
         else:
             # Streamlit Audio 방식
-            with open(file_path, 'rb') as f:
-                audio_bytes = f.read()
-            st.audio(audio_bytes, format='audio/wav')
+            try:
+                with open(file_path, 'rb') as f:
+                    audio_bytes = f.read()
+                st.audio(audio_bytes, format='audio/wav')
+            except Exception:
+                # 오디오 재생 실패 시 조용히 넘어감
+                pass
 
         # 대기 시간 계산
         if wait_mode == 'fixed':
@@ -926,8 +1039,9 @@ def play_audio(file_path, sentence_interval=1.0, next_sentence=False):
 
         time.sleep(wait_time)
 
-    except Exception as e:
-        st.error(f"음성 재생 오류: {str(e)}")
+    except Exception:
+        # 오류 발생 시 경고 없이 계속 진행
+        pass
     finally:
         try:
             if file_path and TEMP_DIR in Path(file_path).parents:
@@ -941,6 +1055,10 @@ async def get_voice_file(text, voice, speed=1.0, output_file=None):
         # 빈 텍스트 체크
         if not text or text.isspace():
             return None
+        
+        # 음성이 없으면 None 반환
+        if voice is None:
+            return None
             
         # 파일명 해시 생성
         text_hash = hashlib.md5(text.encode()).hexdigest()
@@ -951,20 +1069,24 @@ async def get_voice_file(text, voice, speed=1.0, output_file=None):
         # 이미 존재하는 파일이면 재사용
         if output_file.exists():
             return str(output_file)
-            
-        # edge-tts로 음성 생성
-        communicate = edge_tts.Communicate(text, voice, rate=f"+{int((speed-1)*100)}%")
-        await communicate.save(str(output_file))
         
-        # 파일 생성 확인
-        if not output_file.exists():
-            st.error("음성 파일이 생성되지 않았습니다.")
+        try:
+            # edge-tts로 음성 생성
+            communicate = edge_tts.Communicate(text, voice, rate=f"+{int((speed-1)*100)}%")
+            await communicate.save(str(output_file))
+            
+            # 파일 생성 확인
+            if output_file.exists():
+                return str(output_file)
+            else:
+                # 오류 메시지 없이 None 반환
+                return None
+        except Exception:
+            # 음성 생성 실패 시 자막만 표시
             return None
             
-        return str(output_file)
-        
     except Exception as e:
-        st.warning(f"음성 생성 실패: {str(e)}")
+        # 자세한 오류 메시지 없이 None 반환
         return None
 
 def create_learning_ui():
@@ -1067,13 +1189,19 @@ async def start_learning():
             lang = settings.get(lang_key)
             if lang and lang != 'none' and lang in VOICE_MAPPING:
                 voice_key = f"{rank}_voice"  # Changed from language-specific to rank-specific
+                
                 # 현재 설정된 음성 모델 확인
                 current_voice = settings.get(voice_key)
-                if not current_voice or current_voice not in VOICE_MAPPING[lang]:
-                    # 기본 음성 모델로 설정
-                    default_voice = next(iter(VOICE_MAPPING[lang].keys()))
-                    settings[voice_key] = default_voice
-                    st.warning(f"{rank.capitalize()} 언어({lang})의 음성 모델이 재설정되었습니다.")
+                
+                # 음성 모델이 없거나 해당 언어의 음성 목록에 없는 경우 기본값으로 설정
+                try:
+                    if not current_voice or current_voice not in VOICE_MAPPING[lang]:
+                        # 기본 음성 모델로 설정
+                        default_voice = next(iter(VOICE_MAPPING[lang].keys()))
+                        settings[voice_key] = default_voice
+                except Exception:
+                    # 음성 목록이 비어있거나 오류가 발생한 경우 처리
+                    settings[voice_key] = None  # None으로 설정하여 자막만 표시하도록 함
 
         sentence_count = 0
         repeat_count = 0
@@ -1089,25 +1217,57 @@ async def start_learning():
         start_idx = settings['start_row'] - 1
         end_idx = settings['end_row'] - 1
 
-        # 열 이름 매핑
+        # 열 이름 매핑 - 모든 시트에서 일관된 열 이름 사용을 위한 매핑
         column_mapping = {
             'english': 'en-미국',
             'korean': 'ko-한국',
             'chinese': 'zh-중국',
-            'japanese': 'ja-일본',
             'vietnamese': 'vi-베트남',
+            'japanese': 'ja-일본',
             'thai': 'th-태국',
+            'filipino': 'tl-필리핀',
             'russian': 'ru-러시아',
             'uzbek': 'uz-우즈벡',
-            'indonesian': 'id-인니'
+            'mongolian': 'mn-몽골',
+            'nepali': 'ne-네팔',
+            'burmese': 'my-미얀마',
+            'indonesian': 'id-인니',
+            'khmer': 'km-캄보디아'
         }
 
         # 언어별 데이터 저장
         lang_data = {}
+        
+        # 엑셀 시트의 열 이름 확인
+        available_columns = df.columns.tolist()
+        
         for lang, col in column_mapping.items():
-            lang_data[lang] = df[col].iloc[start_idx:end_idx+1].tolist()
+            # 해당 열이 있는지 확인
+            if col in available_columns:
+                lang_data[lang] = df[col].iloc[start_idx:end_idx+1].tolist()
+            else:
+                # 열이 없으면 빈 데이터로 초기화
+                lang_data[lang] = [""] * (end_idx - start_idx + 1)
+                print(f"Warning: Column '{col}' not found in the selected sheet. Using empty data for {lang}.")
 
-        total_sentences = len(lang_data['english'])
+        # 최소한 영어와 한국어 데이터는 있어야 함
+        if not lang_data.get('english') or all(not text for text in lang_data.get('english', [])):
+            # 영어 데이터가 없으면 첫 번째 열을 영어로 간주
+            first_col = available_columns[0]
+            lang_data['english'] = df[first_col].iloc[start_idx:end_idx+1].tolist()
+            print(f"Using column '{first_col}' as English data.")
+            
+        if not lang_data.get('korean') or all(not text for text in lang_data.get('korean', [])):
+            # 한국어 데이터가 없으면 두 번째 열을 한국어로 간주
+            if len(available_columns) > 1:
+                second_col = available_columns[1]
+                lang_data['korean'] = df[second_col].iloc[start_idx:end_idx+1].tolist()
+                print(f"Using column '{second_col}' as Korean data.")
+
+        total_sentences = len(lang_data['english']) if 'english' in lang_data else 0
+        if total_sentences == 0:
+            st.error("선택한 시트에서 데이터를 찾을 수 없습니다.")
+            return
 
         # 학습 UI 생성
         progress, status, subtitles, speed_info = create_learning_ui()
@@ -1159,8 +1319,9 @@ async def start_learning():
                                         """,
                                         unsafe_allow_html=True
                                     )
-                                except Exception as e:
-                                    st.error(f"자막 표시 오류: {str(e)}")
+                                except Exception:
+                                    # 오류 발생 시 경고 없이 계속 진행
+                                    await asyncio.sleep(1)
                                     continue
 
                         # 음성 재생
@@ -1170,15 +1331,27 @@ async def start_learning():
                             
                             for _ in range(repeat):
                                 try:
+                                    # 음성 매핑 가져오기
+                                    voice = get_voice_mapping(lang, settings.get(f"{rank}_voice"))
+                                    
+                                    # 음성이 없으면 자막만 표시하고 계속 진행
+                                    if voice is None:
+                                        await asyncio.sleep(1)
+                                        break
+                                    
+                                    # 음성 파일 생성 및 재생
                                     audio_file = await get_voice_file(
                                         text=text,
-                                        voice=get_voice_mapping(lang, settings.get(f"{rank}_voice")),  # Changed from language-specific to rank-specific
+                                        voice=voice,
                                         speed=speed
                                     )
                                     if audio_file:
                                         play_audio(audio_file, settings['spacing'], False)
-                                except Exception as e:
-                                    st.warning(f"{LANG_DISPLAY.get(lang, lang)} 음성 재생 오류: {str(e)}")
+                                    else:
+                                        # 음성 파일 생성 실패 시 자막만 표시하고 계속 진행
+                                        await asyncio.sleep(1)
+                                except Exception:
+                                    # 오류 발생 시 경고 없이 계속 진행
                                     await asyncio.sleep(1)
                                     continue
 
@@ -1209,9 +1382,10 @@ async def start_learning():
                         
                         status.empty()
                         
-                    except Exception as e:
-                        st.error(f"브레이크 처리 중 오류: {e}")
-                        traceback.print_exc()
+                    except Exception:
+                        # 브레이크 처리 중 오류 발생 시 조용히 넘어감
+                        await asyncio.sleep(1)
+                        status.empty()
 
             # 학습 완료 시
             try:
@@ -1244,14 +1418,13 @@ async def start_learning():
                         st.rerun()
                 break  # 반복이 필요 없으면 루프 종료
 
-            except Exception as e:
-                st.error(f"완료 알림음 재생 오류: {e}")
-                traceback.print_exc()
+            except Exception:
+                # 오류 발생 시 경고 없이 계속 진행
                 break  # 오류 발생 시 루프 종료
 
     except Exception as e:
-        st.error(f"학습 중 오류 발생: {str(e)}")
-        traceback.print_exc()
+        # 학습 중 심각한 오류만 표시
+        st.error("학습 중 오류가 발생했습니다. 설정을 확인하고 다시 시도해주세요.")
 
 def get_column_data(df, column_name, start_idx, end_idx):
     """메모리 효율적인 데이터 로드"""
@@ -1266,9 +1439,26 @@ def get_column_data(df, column_name, start_idx, end_idx):
                 result.extend(chunk)
             return result
         else:
+            # 열 이름이 없는 경우 대체 열 찾기 시도
+            # 열 이름에 언어 코드가 포함되어 있는지 확인
+            for col in df.columns:
+                col_str = str(col).lower()
+                if column_name.startswith('en') and ('en' in col_str or 'english' in col_str or '영어' in col_str or '미국' in col_str):
+                    return get_column_data(df, col, start_idx, end_idx)
+                elif column_name.startswith('ko') and ('ko' in col_str or 'korean' in col_str or '한국' in col_str or '한글' in col_str):
+                    return get_column_data(df, col, start_idx, end_idx)
+                elif column_name.startswith('zh') and ('zh' in col_str or 'chinese' in col_str or '중국' in col_str):
+                    return get_column_data(df, col, start_idx, end_idx)
+                elif column_name.startswith('ja') and ('ja' in col_str or 'japanese' in col_str or '일본' in col_str):
+                    return get_column_data(df, col, start_idx, end_idx)
+                elif column_name.startswith('vi') and ('vi' in col_str or 'vietnamese' in col_str or '베트남' in col_str):
+                    return get_column_data(df, col, start_idx, end_idx)
+                # 다른 언어에 대한 매핑도 추가
+            
+            # 대체 열을 찾지 못한 경우 빈 데이터 반환
             return [""] * (end_idx - start_idx + 1)
     except Exception as e:
-        st.warning(f"{column_name} 열 읽기 실패: {str(e)}")
+        # 오류 발생 시 경고 없이 빈 데이터 반환
         return [""] * (end_idx - start_idx + 1)
 
 def create_personalized_ui():
@@ -1300,8 +1490,21 @@ def create_personalized_ui():
 
 def main():
     """메인 함수"""
+    # 세션 상태 초기화
     initialize_session_state()
     
+    # 엑셀 파일 존재 여부 확인
+    if not EXCEL_PATH.exists():
+        st.error(f"엑셀 파일을 찾을 수 없습니다: {EXCEL_PATH}")
+        st.info("base 폴더에 en600new.xlsx 파일이 있는지 확인해주세요.")
+        return
+    
+    # 모든 언어가 지원되는지 확인
+    for lang in LANGUAGES:
+        if lang != 'none' and lang not in VOICE_MAPPING:
+            st.warning(f"'{LANG_DISPLAY.get(lang, lang)}' 언어는 음성 매핑이 없습니다. 자막만 표시됩니다.")
+    
+    # 페이지에 따라 UI 표시
     if st.session_state.page == 'settings':
         create_settings_ui()
     elif st.session_state.page == 'learning':
