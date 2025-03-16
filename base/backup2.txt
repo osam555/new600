@@ -16,12 +16,11 @@ import json
 import base64
 from pydub import AudioSegment
 import io
-import librosa
 import psutil
 import gc
 import hashlib
 
-## streamlit run en600st/en600_st_app.py
+## streamlit run en600_st22.py
 
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -514,7 +513,7 @@ def create_settings_ui(return_to_learning=False):
             # 음성 속도와 모델 선택 추가
             if settings['first_lang'] in VOICE_MAPPING:
                 speed_options = [round(x * 0.2, 1) for x in range(4, 31)]  # 0.8-6.0배, 0.2간격
-                speed_key = f"{settings['first_lang']}_speed"
+                speed_key = f"first_speed"  # Changed from language-specific to rank-specific
                 current_speed = round(float(settings.get(speed_key, 1.2)), 1)
                 current_speed = max(0.8, min(current_speed, 6.0 if settings['first_lang'] == 'korean' else 4.0))
                 try:
@@ -524,16 +523,17 @@ def create_settings_ui(return_to_learning=False):
                 settings[speed_key] = st.selectbox("음성 속도(배)",
                                          options=speed_options,
                                          index=speed_index,
-                                         key=f"first_speed_top_{settings['first_lang']}")
+                                         key=f"first_speed_top")  # Removed language dependency
                 
                 # 음성 모델 선택
                 voice_options = list(VOICE_MAPPING[settings['first_lang']].keys())
                 default_voice = next(iter(VOICE_MAPPING[settings['first_lang']].keys()))
+                voice_key = "first_voice"  # Changed from language-specific to rank-specific
                 selected_voice = st.selectbox("음성 모델",
                                             options=voice_options,
-                                            index=voice_options.index(settings.get(f"{settings['first_lang']}_voice", default_voice)),
-                                            key=f"first_voice_top_{settings['first_lang']}")
-                settings[f"{settings['first_lang']}_voice"] = selected_voice
+                                            index=voice_options.index(settings.get(voice_key, default_voice)),
+                                            key=f"first_voice_top")
+                settings[voice_key] = selected_voice
 
         with col2:
             settings['second_lang'] = st.selectbox("2번째 언어",
@@ -551,7 +551,7 @@ def create_settings_ui(return_to_learning=False):
             # 음성 속도와 모델 선택 추가
             if settings['second_lang'] in VOICE_MAPPING:
                 speed_options = [round(x * 0.2, 1) for x in range(4, 31)]
-                speed_key = f"second_{settings['second_lang']}_speed"
+                speed_key = f"second_speed"  # Changed from language-specific to rank-specific
                 current_speed = round(float(settings.get(speed_key, 1.2)), 1)
                 current_speed = max(0.8, min(current_speed, 6.0 if settings['second_lang'] == 'korean' else 4.0))
                 try:
@@ -561,16 +561,17 @@ def create_settings_ui(return_to_learning=False):
                 settings[speed_key] = st.selectbox("음성 속도(배)",
                                          options=speed_options,
                                          index=speed_index,
-                                         key=f"second_speed_top_{settings['second_lang']}")
+                                         key=f"second_speed_top")  # Removed language dependency
                 
                 # 음성 모델 선택
                 voice_options = list(VOICE_MAPPING[settings['second_lang']].keys())
                 default_voice = next(iter(VOICE_MAPPING[settings['second_lang']].keys()))
+                voice_key = "second_voice"  # Changed from language-specific to rank-specific
                 selected_voice = st.selectbox("음성 모델",
                                             options=voice_options,
-                                            index=voice_options.index(settings.get(f"{settings['second_lang']}_voice", default_voice)),
-                                            key=f"second_voice_top_{settings['second_lang']}")
-                settings[f"{settings['second_lang']}_voice"] = selected_voice
+                                            index=voice_options.index(settings.get(voice_key, default_voice)),
+                                            key=f"second_voice_top")
+                settings[voice_key] = selected_voice
 
         with col3:
             # 3순위 언어에는 'none' 옵션 추가
@@ -593,7 +594,7 @@ def create_settings_ui(return_to_learning=False):
                 # 음성 속도와 모델 선택 추가
                 if settings['third_lang'] in VOICE_MAPPING:
                     speed_options = [round(x * 0.2, 1) for x in range(4, 31)]
-                    speed_key = f"third_{settings['third_lang']}_speed"
+                    speed_key = f"third_speed"  # Changed from language-specific to rank-specific
                     current_speed = round(float(settings.get(speed_key, 1.2)), 1)
                     current_speed = max(0.8, min(current_speed, 6.0 if settings['third_lang'] == 'korean' else 4.0))
                     try:
@@ -603,16 +604,17 @@ def create_settings_ui(return_to_learning=False):
                     settings[speed_key] = st.selectbox("음성 속도(배)",
                                              options=speed_options,
                                              index=speed_index,
-                                             key=f"third_speed_top_{settings['third_lang']}")
+                                             key=f"third_speed_top")  # Removed language dependency
                     
                     # 음성 모델 선택
                     voice_options = list(VOICE_MAPPING[settings['third_lang']].keys())
                     default_voice = next(iter(VOICE_MAPPING[settings['third_lang']].keys()))
+                    voice_key = "third_voice"  # Changed from language-specific to rank-specific
                     selected_voice = st.selectbox("음성 모델",
                                                 options=voice_options,
-                                                index=voice_options.index(settings.get(f"{settings['third_lang']}_voice", default_voice)),
-                                                key=f"third_voice_top_{settings['third_lang']}")
-                    settings[f"{settings['third_lang']}_voice"] = selected_voice
+                                                index=voice_options.index(settings.get(voice_key, default_voice)),
+                                                key=f"third_voice_top")
+                    settings[voice_key] = selected_voice
             else:
                 # 'none'일 때는 재생 횟수를 0으로 설정
                 settings['third_repeat'] = 0
@@ -1064,7 +1066,7 @@ async def start_learning():
         for rank, lang_key in [('first', 'first_lang'), ('second', 'second_lang'), ('third', 'third_lang')]:
             lang = settings.get(lang_key)
             if lang and lang != 'none' and lang in VOICE_MAPPING:
-                voice_key = f"{lang}_voice"
+                voice_key = f"{rank}_voice"  # Changed from language-specific to rank-specific
                 # 현재 설정된 음성 모델 확인
                 current_voice = settings.get(voice_key)
                 if not current_voice or current_voice not in VOICE_MAPPING[lang]:
@@ -1125,7 +1127,7 @@ async def start_learning():
                     lang = settings[lang_key]
                     if lang != 'none' and lang in lang_data:
                         # 배속 정보 표시
-                        speed_key = f"{rank}_{lang}_speed"
+                        speed_key = f"{rank}_speed"
                         speed = settings.get(speed_key, 1.2)
                         speed_text = str(int(speed)) if speed.is_integer() else f"{speed:.1f}"
                         speed_display.append(f"{LANG_DISPLAY.get(lang, lang)} {speed_text}배")
@@ -1163,14 +1165,14 @@ async def start_learning():
 
                         # 음성 재생
                         if repeat > 0:
-                            speed_key = f"{rank}_{lang}_speed"
+                            speed_key = f"{rank}_speed"
                             speed = settings.get(speed_key, 1.2)
                             
                             for _ in range(repeat):
                                 try:
                                     audio_file = await get_voice_file(
                                         text=text,
-                                        voice=get_voice_mapping(lang, settings.get(f"{lang}_voice")),
+                                        voice=get_voice_mapping(lang, settings.get(f"{rank}_voice")),  # Changed from language-specific to rank-specific
                                         speed=speed
                                     )
                                     if audio_file:
