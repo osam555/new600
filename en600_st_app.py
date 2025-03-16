@@ -544,7 +544,7 @@ def create_settings_ui(return_to_learning=False):
             # 음성 재생 횟수를 선택박스로 변경
             current_repeat = max(1, min(settings.get('second_repeat', 1), 5))
             settings['second_repeat'] = st.selectbox("음성 재생(횟수)",
-                                       options=list(range(1, 3)),
+                                       options=list(range(0, 3)),
                                        index=current_repeat-1,
                                        key="second_repeat")
             
@@ -586,7 +586,7 @@ def create_settings_ui(return_to_learning=False):
                 # 음성 재생 횟수를 선택박스로 변경
                 current_repeat = max(1, min(settings.get('third_repeat', 1), 5))  # 1-5 사이로 제한
                 settings['third_repeat'] = st.selectbox("음성 재생(횟수)",
-                                          options=list(range(1, 3)),  # 1-2회
+                                          options=list(range(0, 3)),  # 1-2회
                                           index=current_repeat-1,  # 0-based index
                                           key="third_repeat")
                 
