@@ -1457,14 +1457,6 @@ def main():
         initial_sidebar_state="expanded"
     )
     
-    # README.md 파일 읽기 및 표시
-    try:
-        with open('README.md', 'r', encoding='utf-8') as f:
-            readme_content = f.read()
-            st.markdown(readme_content, unsafe_allow_html=True)
-    except Exception as e:
-        st.warning(f"README.md 파일을 읽을 수 없습니다: {e}")
-    
     # 썸네일 이미지 설정
     st.markdown("""
         <head>
