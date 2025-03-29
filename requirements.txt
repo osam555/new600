@@ -1,0 +1,14 @@
+streamlit>=1.24.0
+pandas>=1.5.0
+edge-tts>=6.1.9
+pygame
+soundfile
+Pillow>=9.5.0
+pydub>=0.25.1
+librosa>=0.10.0
+psutil>=5.9.0
+openpyxl>=3.1.0
+opencv-python-headless
+numpy
+mediapipe
+matplotlib 
