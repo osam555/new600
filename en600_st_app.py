@@ -1457,10 +1457,32 @@ def main():
         initial_sidebar_state="expanded"
     )
     
+    # Streamlit 기본 footer 숨기기 및 새로운 footer 스타일 추가
+    st.markdown("""
+        <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            footer:after {
+                content:'한국어, 영어, 중국어, 베트남어 등 14개국어 회화'; 
+                visibility: visible;
+                display: block;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                text-align: center;
+                padding: 10px;
+                background-color: rgba(0,0,0,0.8);
+                color: #00FF00;
+                font-size: 14px;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    
     # 썸네일 이미지 설정
     st.markdown("""
         <head>
-            <meta property="og:image" content="https://github.com/osam555/new600/blob/main/Dopamine_logo.png"/>
+            <meta property="og:image" content="https://github.com/osam555/new600/blob/dc025bb096fe40a3bb5d23fa2d9cbaf6b8faae6c/Dopamine_logo.png"/>
             <meta property="og:title" content="도파민 대충영어"/>
             <meta property="og:description" content="머리가 좋아지는 영어 학습"/>
         </head>
