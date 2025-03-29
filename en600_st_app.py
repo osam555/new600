@@ -22,6 +22,7 @@ import gc
 import hashlib
 
 ## streamlit run en600st/en600_st_app.py
+# 14개국 76개 음성, 영어 19개국 48개 음성
 
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -504,17 +505,18 @@ def create_settings_ui(return_to_learning=False):
                 
                 # 시트 선택 (기본값: 첫 번째 시트)
                 selected_sheet = st.selectbox(
-                    "주제 : 생활영어, 여행영어, 천일문",
+                    "영어 19개국 48개 음성",
                     options=sheet_names,
                     index=0,
-                    key="sheet_select"
+                    key="sheet_select",
+                    label_visibility="visible"
                 )
                 
-                # 선택된 시트 데이터 읽기 - header=None으로 변경하여 첫 행을 헤더로 사용
+                # 선택된 시트 데이터 읽기 - header=0으로 변경하여 첫 행을 헤더로 사용
                 df = pd.read_excel(
                     EXCEL_PATH,
                     sheet_name=selected_sheet,
-                    header=None,  # 첫 행을 헤더로 사용
+                    header=0,  # 첫 행을 헤더로 사용
                     engine='openpyxl'
                 )
                 max_row = len(df)
@@ -598,7 +600,7 @@ def create_settings_ui(return_to_learning=False):
         st.info(f"선택된 범위: {settings['start_row']} ~ {settings['end_row']} (총 {settings['end_row'] - settings['start_row'] + 1}문장)")
 
         # 언어 순위 설정
-        st.subheader("✅ 언어 선택 • 음성 • 속도 : 14개국어")
+        st.subheader("✅ 언어 선택 : 14개국어 76개 음성")
         col1, col2, col3 = st.columns(3)
         
         # 기본 지원 언어 리스트 수정
@@ -1141,7 +1143,7 @@ def create_learning_ui():
         if st.button("⚙️ 학습 설정"):
             st.session_state.page = 'settings_from_learning'
             st.rerun()
-        if st.button("⏹️ 학습 종료"):
+        if st.button("🛑 학습 종료"):
             st.session_state.page = 'settings'
             st.rerun()
 
@@ -1451,7 +1453,7 @@ def main():
     """메인 함수"""
     # 페이지 설정을 가장 먼저 호출
     st.set_page_config(
-        page_title="도파민 대충영어",
+        page_title="도파민 대충영어 : 14개국 76개 음성",
         page_icon="🎧",
         layout="wide",
         initial_sidebar_state="expanded"
@@ -1463,7 +1465,7 @@ def main():
             #MainMenu {visibility: hidden;}
             footer {visibility: hidden;}
             footer:after {
-                content:'한국어, 영어, 중국어, 베트남어 등 14개국어 회화'; 
+                content:'한국어, 영어, 중국어 등 14개국어 회화'; 
                 visibility: visible;
                 display: block;
                 position: fixed;
