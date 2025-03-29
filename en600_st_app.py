@@ -1474,6 +1474,13 @@ def main():
         asyncio.run(start_learning())
     elif st.session_state.page == 'settings_from_learning':
         create_settings_ui(return_to_learning=True)
+        
+    # 하단 문구 추가
+    st.markdown("""
+        <div style="position: fixed; bottom: 0; left: 0; right: 0; text-align: center; padding: 10px; background-color: rgba(0,0,0,0.8); color: #00FF00; font-size: 14px;">
+            한국어, 영어, 중국어, 베트남어 등 14개국어 회화
+        </div>
+    """, unsafe_allow_html=True)
 
 def save_settings(settings):
     """설정값을 파일에 저장"""
