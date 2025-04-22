@@ -606,7 +606,7 @@ def create_settings_ui(return_to_learning=False):
         st.info(f"선택된 범위: {settings['start_row']} ~ {settings['end_row']} (총 {settings['end_row'] - settings['start_row'] + 1}문장)")
 
         # 언어 순위 설정
-        st.subheader("✅ 언어 선택 : 14개국어 76개 음성")
+        st.subheader("✅ 언어 선택 : 15개국 78개 음성")
         col1, col2, col3 = st.columns(3)
         
         # 기본 지원 언어 리스트 수정
