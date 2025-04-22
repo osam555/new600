@@ -22,7 +22,7 @@ import gc
 import hashlib
 
 ## streamlit run en600st/en600_st_app.py
-# 14개국 76개 음성, 영어 19개국 48개 음성
+# 15개국 78개 음성, 영어 19개국 48개 음성
 
 # 기본 경로 설정
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -49,7 +49,8 @@ LANG_DISPLAY = {
     'nepali': '네팔어',
     'burmese': '미얀마어',
     'indonesian': '인도네시아어',
-    'khmer': '캄보디아어'
+    'khmer': '캄보디아어',
+    'hindi': '힌디어'  # 히브리어(인도) 추가
 }
 
 # 음성 매핑에 새로운 언어 추가
@@ -187,13 +188,17 @@ VOICE_MAPPING = {
     'khmer': {  # 캄보디아어
         "Piseth": "km-KH-PisethNeural",
         "Sreymom": "km-KH-SreymomNeural"
+    },
+    'hindi': {  # 히브리어(인도)
+        "Swara": "hi-IN-SwaraNeural",
+        "Madhur": "hi-IN-MadhurNeural"
     }
 }
 
 # 언어 설정 업데이트
 LANGUAGES = ['english', 'korean', 'chinese', 'japanese', 'vietnamese', 'filipino', 
             'thai', 'russian', 'uzbek', 'mongolian', 'nepali', 'burmese', 
-            'indonesian', 'khmer', 'none']
+            'indonesian', 'khmer', 'hindi', 'none']  # 히브리어(인도) 추가
 
 # 색상 매핑 추가
 COLOR_MAPPING = {
@@ -221,7 +226,8 @@ LANGUAGE_MAPPING = {
     'ne': {'code': 'ne-NP', 'name': '네팔'},
     'my': {'code': 'my-MM', 'name': '미얀마'},
     'id': {'code': 'id-ID', 'name': '인도네시아'},
-    'km': {'code': 'km-KH', 'name': '캄보디아'}
+    'km': {'code': 'km-KH', 'name': '캄보디아'},
+    'hi': {'code': 'hi-IN', 'name': '인도'}  # 히브리어(인도) 추가
 }
 
 def format_column_header(lang_code):
@@ -492,8 +498,8 @@ def create_settings_ui(return_to_learning=False):
         with col1:
             st.markdown("""
                 <h1 style="font-size: 2rem; color: #FF0000; line-height: 1.2;">
-                    머리가 좋아지는🎧<br>
-                    도파민 대충영어🇰🇷
+                    도파민 대충영어🎧<br>
+                    2배 빠른 한국어🇰🇷
                 </h1>
             """, unsafe_allow_html=True)
         with col2:
@@ -607,7 +613,7 @@ def create_settings_ui(return_to_learning=False):
         supported_languages = [
             'korean', 'english', 'chinese', 'japanese', 'vietnamese', 
             'filipino', 'thai', 'russian', 'uzbek', 'mongolian', 
-            'nepali', 'burmese', 'indonesian', 'khmer'
+            'nepali', 'burmese', 'indonesian', 'khmer', 'hindi'  # 힌디어 추가
         ]
         
         with col1:
@@ -1219,7 +1225,8 @@ async def start_learning():
             'thai': 'th-태국',
             'russian': 'ru-러시아',
             'uzbek': 'uz-우즈벡',
-            'indonesian': 'id-인니'
+            'indonesian': 'id-인니',
+            'hindi': 'hi-인도'  # 히브리어(인도) 추가
         }
 
         # 언어별 데이터 저장
@@ -1427,10 +1434,11 @@ def create_personalized_ui():
     st.title("개인별 설정 기억하기")
 
     # 언어 선택
-    selected_language = st.selectbox
+    selected_language = st.selectbox(
     "사용할 언어를 선택하세요",
-    options=['korean', 'english', 'chinese', 'japanese', 'vietnamese'],
-    index=['korean', 'english', 'chinese', 'japanese', 'vietnamese'].index(st.session_state.user_language)
+    options=['korean', 'english', 'chinese', 'japanese', 'vietnamese', 'hindi'],
+    index=['korean', 'english', 'chinese', 'japanese', 'vietnamese', 'hindi'].index(st.session_state.user_language)
+    )
         
     # 선택한 언어를 세션 상태에 저장
     if selected_language != st.session_state.user_language:
@@ -1448,6 +1456,8 @@ def create_personalized_ui():
         st.write("こんにちは！これは日本語で表示されます。")
     elif st.session_state.user_language == 'vietnamese':
         st.write("Xin chào! Đây là dòng chữ tiếng Việt.")
+    elif st.session_state.user_language == 'hindi':
+        st.write("नमस्ते! यह हिंदी में प्रदर्शित किया जा रहा है।")
 
 def main():
     """메인 함수"""
